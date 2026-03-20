@@ -1,4 +1,5 @@
 import argparse
+import asyncio
 import sys
 
 from textual import work
@@ -57,59 +58,57 @@ class TenorTUI(App):
         if self._current_symbol:
             self._load_ticker(self._current_symbol)
 
-    @work(exclusive=True, thread=True)
-    def _load_ticker(self, symbol: str) -> None:
+    @work(exclusive=True)
+    async def _load_ticker(self, symbol: str) -> None:
         ticker_bar = self.query_one(TickerBar)
         expiry_selector = self.query_one(ExpirySelector)
         chain_table = self.query_one(ChainTable)
 
-        self.call_from_thread(setattr, chain_table, "loading", True)
+        chain_table.loading = True
 
         try:
-            quote = self._provider.get_quote(symbol)
+            quote = await asyncio.to_thread(self._provider.get_quote, symbol)
             self._current_price = quote.price
-            self.call_from_thread(ticker_bar.show_quote, quote)
+            ticker_bar.show_quote(quote)
         except SymbolNotFoundError:
-            self.call_from_thread(ticker_bar.show_error, f"Symbol '{symbol}' not found")
-            self.call_from_thread(setattr, chain_table, "loading", False)
+            ticker_bar.show_error(f"Symbol '{symbol}' not found")
+            chain_table.loading = False
             return
         except ProviderError as e:
-            self.call_from_thread(ticker_bar.show_error, str(e))
-            self.call_from_thread(setattr, chain_table, "loading", False)
+            ticker_bar.show_error(str(e))
+            chain_table.loading = False
             return
 
         try:
-            expirations = self._provider.get_expirations(symbol)
-            self.call_from_thread(expiry_selector.set_expirations, expirations)
+            expirations = await asyncio.to_thread(self._provider.get_expirations, symbol)
+            await expiry_selector.set_expirations(expirations)
 
             if expirations:
                 self._current_expiration = expirations[0]
-                chain = self._provider.get_chain(symbol, expirations[0])
-                self.call_from_thread(chain_table.display_chain, chain, self._current_price)
+                chain = await asyncio.to_thread(self._provider.get_chain, symbol, expirations[0])
+                await chain_table.display_chain(chain, self._current_price)
             else:
-                self.call_from_thread(chain_table.show_message, f"No options available for {symbol}")
+                await chain_table.show_message(f"No options available for {symbol}")
         except ProviderError as e:
-            self.call_from_thread(chain_table.show_message, str(e))
+            await chain_table.show_message(str(e))
 
-        self.call_from_thread(setattr, chain_table, "loading", False)
-        status_bar = self.query_one(StatusBar)
-        self.call_from_thread(status_bar.update_refresh_time)
+        chain_table.loading = False
+        self.query_one(StatusBar).update_refresh_time()
 
-    @work(exclusive=True, thread=True, group="chain")
-    def _load_chain(self, symbol: str, expiration: str) -> None:
+    @work(exclusive=True, group="chain")
+    async def _load_chain(self, symbol: str, expiration: str) -> None:
         chain_table = self.query_one(ChainTable)
 
-        self.call_from_thread(setattr, chain_table, "loading", True)
+        chain_table.loading = True
 
         try:
-            chain = self._provider.get_chain(symbol, expiration)
-            self.call_from_thread(chain_table.display_chain, chain, self._current_price)
+            chain = await asyncio.to_thread(self._provider.get_chain, symbol, expiration)
+            await chain_table.display_chain(chain, self._current_price)
         except ProviderError as e:
-            self.call_from_thread(chain_table.show_message, str(e))
+            await chain_table.show_message(str(e))
 
-        self.call_from_thread(setattr, chain_table, "loading", False)
-        status_bar = self.query_one(StatusBar)
-        self.call_from_thread(status_bar.update_refresh_time)
+        chain_table.loading = False
+        self.query_one(StatusBar).update_refresh_time()
 
 
 def _parse_args() -> argparse.Namespace:
