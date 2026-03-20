@@ -1,7 +1,21 @@
+import math
+
 import yfinance as yf
 
 from tenortui.exceptions import ProviderError, SymbolNotFoundError
 from tenortui.models import OptionContract, OptionsChain, Quote
+
+
+def _safe_int(value, default: int = 0) -> int:
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return default
+    return int(value)
+
+
+def _safe_float(value, default: float = 0.0) -> float:
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return default
+    return float(value)
 
 
 class YahooProvider:
@@ -53,12 +67,12 @@ class YahooProvider:
         return OptionContract(
             contract_symbol=row.get("contractSymbol", ""),
             option_type=option_type,
-            strike=float(row.get("strike", 0)),
-            bid=float(row.get("bid", 0)),
-            ask=float(row.get("ask", 0)),
-            last_price=float(row.get("lastPrice", 0)),
-            volume=int(row.get("volume", 0) or 0),
-            open_interest=int(row.get("openInterest", 0) or 0),
-            implied_volatility=float(row.get("impliedVolatility", 0)),
+            strike=_safe_float(row.get("strike")),
+            bid=_safe_float(row.get("bid")),
+            ask=_safe_float(row.get("ask")),
+            last_price=_safe_float(row.get("lastPrice")),
+            volume=_safe_int(row.get("volume")),
+            open_interest=_safe_int(row.get("openInterest")),
+            implied_volatility=_safe_float(row.get("impliedVolatility")),
             delta=None, gamma=None, theta=None, vega=None, rho=None,
         )
