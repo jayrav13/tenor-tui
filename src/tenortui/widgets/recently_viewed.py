@@ -65,6 +65,7 @@ class RecentlyViewed(Widget):
                     f"{change_sign}{quote.change:.2f} ({change_sign}{quote.change_percent:.2f}%)"
                 )
                 list_view.append(ListItem(Label(text)))
+            list_view.index = 0
 
     def on_list_view_selected(self, event: ListView.Selected) -> None:
         index = self.query_one(ListView).index
