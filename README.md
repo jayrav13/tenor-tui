@@ -12,12 +12,12 @@ pip install .
 
 ```bash
 tenortui                    # Uses Yahoo Finance (default, no config needed)
-tenortui --provider tradier # Use Tradier (requires API key in ~/.tenorrc)
+tenortui --provider tradier # Use Tradier (requires API key in config)
 ```
 
 ## Configuration
 
-Create `~/.tenorrc` (optional):
+Create `~/.config/tenor/config.yaml` (optional):
 
 ```yaml
 ---
@@ -29,6 +29,8 @@ tradier:
   api_key: your-api-key-here
   sandbox: false
 ```
+
+Legacy `~/.tenorrc` is also supported as a fallback.
 
 ## Keybindings
 
