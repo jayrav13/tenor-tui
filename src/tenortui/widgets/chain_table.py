@@ -68,11 +68,14 @@ class ChainTable(Widget):
         calls_atm = self._populate_table(calls_table, columns, chain.calls, current_price)
         puts_atm = self._populate_table(puts_table, columns, chain.puts, current_price)
 
-        # Scroll each table so ATM row is visible
+        # Scroll each table so ATM row is visible with context below
+        # Move cursor 5 rows past ATM so ATM sits mid-screen, not at bottom
         if calls_atm is not None:
-            calls_table.move_cursor(row=calls_atm)
+            target = min(calls_atm + 5, calls_table.row_count - 1)
+            calls_table.move_cursor(row=target)
         if puts_atm is not None:
-            puts_table.move_cursor(row=puts_atm)
+            target = min(puts_atm + 5, puts_table.row_count - 1)
+            puts_table.move_cursor(row=target)
 
     def _populate_table(self, table, columns, contracts, current_price) -> int | None:
         """Populate table and return the ATM row index (or None)."""
