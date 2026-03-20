@@ -65,18 +65,29 @@ class ChainTable(Widget):
         await container.mount(Static("PUTS", classes="section-label"))
         await container.mount(puts_table)
 
-        self._populate_table(calls_table, columns, chain.calls, current_price)
-        self._populate_table(puts_table, columns, chain.puts, current_price)
+        calls_atm = self._populate_table(calls_table, columns, chain.calls, current_price)
+        puts_atm = self._populate_table(puts_table, columns, chain.puts, current_price)
 
-    def _populate_table(self, table, columns, contracts, current_price):
+        # Scroll each table so ATM row is visible
+        if calls_atm is not None:
+            calls_table.move_cursor(row=calls_atm)
+        if puts_atm is not None:
+            puts_table.move_cursor(row=puts_atm)
+
+    def _populate_table(self, table, columns, contracts, current_price) -> int | None:
+        """Populate table and return the ATM row index (or None)."""
         for col_name, _width in columns:
             table.add_column(col_name, key=col_name.lower())
 
+        atm_row_idx = None
         atm_inserted = False
+        row_count = 0
         for contract in sorted(contracts, key=lambda c: c.strike):
             if current_price and not atm_inserted and contract.strike > current_price:
                 atm_row = ["── ATM ──"] + ["─" * 6] * (len(columns) - 1)
                 table.add_row(*atm_row)
+                atm_row_idx = row_count
+                row_count += 1
                 atm_inserted = True
 
             row = [
@@ -98,6 +109,9 @@ class ChainTable(Widget):
                     f"{contract.rho:.3f}" if contract.rho is not None else "",
                 ])
             table.add_row(*row)
+            row_count += 1
+
+        return atm_row_idx
 
     async def show_message(self, text: str) -> None:
         container = self.query_one(VerticalScroll)
