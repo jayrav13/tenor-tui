@@ -76,3 +76,33 @@ class YahooProvider:
             implied_volatility=_safe_float(row.get("impliedVolatility")),
             delta=None, gamma=None, theta=None, vega=None, rho=None,
         )
+
+
+def batch_quotes(symbols: list[str]) -> list[Quote]:
+    if not symbols:
+        return []
+    try:
+        tickers = yf.Tickers(" ".join(symbols))
+    except Exception:
+        return []
+    quotes = []
+    for symbol in symbols:
+        try:
+            ticker = tickers.tickers.get(symbol)
+            if ticker is None:
+                continue
+            info = ticker.info
+            if not info.get("regularMarketPrice"):
+                continue
+            quotes.append(Quote(
+                symbol=symbol,
+                name=info.get("shortName", symbol),
+                price=info["regularMarketPrice"],
+                change=info.get("regularMarketChange", 0.0),
+                change_percent=info.get("regularMarketChangePercent", 0.0),
+                volume=info.get("regularMarketVolume", 0),
+                market_cap=info.get("marketCap"),
+            ))
+        except Exception:
+            continue
+    return quotes
