@@ -1,0 +1,14 @@
+Screen {
+    background: $surface;
+    color: $text;
+    layout: vertical;
+}
+
+#main-content {
+    height: 1fr;
+    layout: vertical;
+}
+
+LoadingIndicator {
+    background: $surface 50%;
+}
