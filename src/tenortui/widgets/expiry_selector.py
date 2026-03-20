@@ -30,23 +30,21 @@ class ExpirySelector(Widget):
         yield Static("Search for a ticker to view options", classes="no-data")
 
     async def set_expirations(self, expirations: list[str]) -> None:
-        for child in list(self.children):
-            await child.remove()
+        await self.remove_children()
 
         if not expirations:
             await self.mount(Static("No options available", classes="no-data"))
             return
 
-        tabbed = TabbedContent(id="expiry-tabs")
+        tabbed = TabbedContent()
         await self.mount(tabbed)
         for exp in expirations:
-            await tabbed.add_pane(TabPane(exp, Static(""), id=f"exp-{exp}"))
+            await tabbed.add_pane(TabPane(exp, Static("")))
 
     def on_tabbed_content_tab_activated(self, event: TabbedContent.TabActivated) -> None:
         label = str(event.tab.label)
         self.post_message(self.ExpirySelected(label))
 
     async def show_message(self, text: str) -> None:
-        for child in list(self.children):
-            await child.remove()
+        await self.remove_children()
         await self.mount(Static(text, classes="no-data"))
