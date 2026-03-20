@@ -95,7 +95,7 @@ class TenorTUI(App):
         chain_table.loading = False
         self.query_one(StatusBar).update_refresh_time()
 
-    @work(exclusive=True, group="chain")
+    @work(exclusive=True)
     async def _load_chain(self, symbol: str, expiration: str) -> None:
         chain_table = self.query_one(ChainTable)
 

@@ -1,5 +1,5 @@
 from textual.app import ComposeResult
-from textual.containers import Vertical
+from textual.containers import VerticalScroll
 from textual.widget import Widget
 from textual.widgets import DataTable, Static
 
@@ -20,7 +20,7 @@ class ChainTable(Widget):
     ChainTable {
         height: 1fr;
     }
-    ChainTable Vertical {
+    ChainTable VerticalScroll {
         height: 1fr;
     }
     ChainTable .section-label {
@@ -33,7 +33,8 @@ class ChainTable(Widget):
         width: 1fr;
     }
     ChainTable DataTable {
-        height: 1fr;
+        height: auto;
+        max-height: 50%;
     }
     ChainTable .no-data {
         height: 1fr;
@@ -43,28 +44,26 @@ class ChainTable(Widget):
     """
 
     def compose(self) -> ComposeResult:
-        with Vertical(id="chain-container"):
-            yield Static("Search for a ticker to view options chain", classes="no-data")
+        yield VerticalScroll()
+
+    def on_mount(self) -> None:
+        container = self.query_one(VerticalScroll)
+        container.mount(Static("Search for a ticker to view options chain", classes="no-data"))
 
     async def display_chain(self, chain: OptionsChain, current_price: float | None = None) -> None:
         show_greeks = any(c.has_greeks for c in chain.calls + chain.puts)
         columns = BASE_COLUMNS + (GREEK_COLUMNS if show_greeks else [])
 
-        # Build new container with fresh widgets to avoid duplicate ID issues
-        new_container = Vertical(id="chain-container")
-        old_container = self.query_one("#chain-container", Vertical)
-        await old_container.remove()
-        await self.mount(new_container)
+        container = self.query_one(VerticalScroll)
+        await container.remove_children()
 
-        calls_label = Static("CALLS", classes="section-label")
         calls_table = DataTable()
-        puts_label = Static("PUTS", classes="section-label")
         puts_table = DataTable()
 
-        await new_container.mount(calls_label)
-        await new_container.mount(calls_table)
-        await new_container.mount(puts_label)
-        await new_container.mount(puts_table)
+        await container.mount(Static("CALLS", classes="section-label"))
+        await container.mount(calls_table)
+        await container.mount(Static("PUTS", classes="section-label"))
+        await container.mount(puts_table)
 
         self._populate_table(calls_table, columns, chain.calls, current_price)
         self._populate_table(puts_table, columns, chain.puts, current_price)
@@ -101,8 +100,6 @@ class ChainTable(Widget):
             table.add_row(*row)
 
     async def show_message(self, text: str) -> None:
-        old_container = self.query_one("#chain-container", Vertical)
-        await old_container.remove()
-        new_container = Vertical(id="chain-container")
-        await self.mount(new_container)
-        await new_container.mount(Static(text, classes="no-data"))
+        container = self.query_one(VerticalScroll)
+        await container.remove_children()
+        await container.mount(Static(text, classes="no-data"))
