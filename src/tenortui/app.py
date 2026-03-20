@@ -31,6 +31,7 @@ class TenorTUI(App):
         self._current_symbol: str | None = None
         self._current_expiration: str | None = None
         self._current_price: float | None = None
+        self._loading_ticker: bool = False
 
     def compose(self) -> ComposeResult:
         yield TickerBar()
@@ -48,7 +49,7 @@ class TenorTUI(App):
 
     def on_expiry_selector_expiry_selected(self, event: ExpirySelector.ExpirySelected) -> None:
         self._current_expiration = event.expiration
-        if self._current_symbol:
+        if self._current_symbol and not self._loading_ticker:
             self._load_chain(self._current_symbol, event.expiration)
 
     def action_focus_search(self) -> None:
@@ -58,13 +59,14 @@ class TenorTUI(App):
         if self._current_symbol:
             self._load_ticker(self._current_symbol)
 
-    @work(exclusive=True)
+    @work(exclusive=True, group="ticker")
     async def _load_ticker(self, symbol: str) -> None:
         ticker_bar = self.query_one(TickerBar)
         expiry_selector = self.query_one(ExpirySelector)
         chain_table = self.query_one(ChainTable)
 
         chain_table.loading = True
+        self._loading_ticker = True
 
         try:
             quote = await asyncio.to_thread(self._provider.get_quote, symbol)
@@ -73,10 +75,12 @@ class TenorTUI(App):
         except SymbolNotFoundError:
             ticker_bar.show_error(f"Symbol '{symbol}' not found")
             chain_table.loading = False
+            self._loading_ticker = False
             return
         except ProviderError as e:
             ticker_bar.show_error(str(e))
             chain_table.loading = False
+            self._loading_ticker = False
             return
 
         try:
@@ -93,9 +97,10 @@ class TenorTUI(App):
             await chain_table.show_message(str(e))
 
         chain_table.loading = False
+        self._loading_ticker = False
         self.query_one(StatusBar).update_refresh_time()
 
-    @work(exclusive=True)
+    @work(exclusive=True, group="chain")
     async def _load_chain(self, symbol: str, expiration: str) -> None:
         chain_table = self.query_one(ChainTable)
 
