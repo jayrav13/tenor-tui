@@ -1,0 +1,42 @@
+{
+  "options": {
+    "option": [
+      {
+        "symbol": "AAPL260321C00200000",
+        "option_type": "call",
+        "strike": 200.0,
+        "bid": 14.20,
+        "ask": 14.50,
+        "last": 14.35,
+        "volume": 1234,
+        "open_interest": 8901,
+        "implied_volatility": 0.32,
+        "greeks": {
+          "delta": 0.81,
+          "gamma": 0.03,
+          "theta": -0.15,
+          "vega": 0.25,
+          "rho": 0.10
+        }
+      },
+      {
+        "symbol": "AAPL260321P00200000",
+        "option_type": "put",
+        "strike": 200.0,
+        "bid": 0.85,
+        "ask": 0.95,
+        "last": 0.90,
+        "volume": 567,
+        "open_interest": 3456,
+        "implied_volatility": 0.28,
+        "greeks": {
+          "delta": -0.18,
+          "gamma": 0.02,
+          "theta": -0.10,
+          "vega": 0.20,
+          "rho": -0.05
+        }
+      }
+    ]
+  }
+}
