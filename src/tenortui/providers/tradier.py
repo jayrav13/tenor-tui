@@ -7,6 +7,18 @@ PROD_URL = "https://api.tradier.com/v1"
 SANDBOX_URL = "https://sandbox.tradier.com/v1"
 
 
+def _safe_float(value, default: float = 0.0) -> float:
+    if value is None:
+        return default
+    return float(value)
+
+
+def _safe_int(value, default: int = 0) -> int:
+    if value is None:
+        return default
+    return int(value)
+
+
 class TradierProvider:
     name = "tradier"
 
@@ -42,10 +54,10 @@ class TradierProvider:
         return Quote(
             symbol=q["symbol"],
             name=q.get("description", symbol),
-            price=float(q.get("last", 0)),
-            change=float(q.get("change", 0)),
-            change_percent=float(q.get("change_percentage", 0)),
-            volume=int(q.get("volume", 0) or 0),
+            price=_safe_float(q.get("last")),
+            change=_safe_float(q.get("change")),
+            change_percent=_safe_float(q.get("change_percentage")),
+            volume=_safe_int(q.get("volume")),
             market_cap=q.get("market_cap"),
         )
 
@@ -76,13 +88,13 @@ class TradierProvider:
         return OptionContract(
             contract_symbol=opt.get("symbol", ""),
             option_type=opt.get("option_type", "call"),
-            strike=float(opt.get("strike", 0)),
-            bid=float(opt.get("bid", 0)),
-            ask=float(opt.get("ask", 0)),
-            last_price=float(opt.get("last", 0)),
-            volume=int(opt.get("volume", 0) or 0),
-            open_interest=int(opt.get("open_interest", 0) or 0),
-            implied_volatility=float(opt.get("implied_volatility", 0) or 0),
+            strike=_safe_float(opt.get("strike")),
+            bid=_safe_float(opt.get("bid")),
+            ask=_safe_float(opt.get("ask")),
+            last_price=_safe_float(opt.get("last")),
+            volume=_safe_int(opt.get("volume")),
+            open_interest=_safe_int(opt.get("open_interest")),
+            implied_volatility=_safe_float(opt.get("implied_volatility")),
             delta=greeks.get("delta"),
             gamma=greeks.get("gamma"),
             theta=greeks.get("theta"),
