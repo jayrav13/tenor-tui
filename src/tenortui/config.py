@@ -6,12 +6,25 @@ import yaml
 from tenortui.exceptions import ConfigError
 
 KNOWN_PROVIDERS = {"yahoo", "tradier"}
-DEFAULT_CONFIG_PATH = Path.home() / ".tenorrc"
+DEFAULT_CONFIG_PATH = Path.home() / ".config" / "tenor" / "config.yaml"
+LEGACY_CONFIG_PATH = Path.home() / ".tenorrc"
 
 PROVIDER_REQUIRED_FIELDS: dict[str, list[str]] = {
     "yahoo": [],
     "tradier": ["api_key"],
 }
+
+
+def resolve_config_path(
+    new_path: Path = DEFAULT_CONFIG_PATH,
+    legacy_path: Path = LEGACY_CONFIG_PATH,
+) -> Path:
+    """Return new_path if it exists, fall back to legacy_path if it exists, else new_path."""
+    if new_path.exists():
+        return new_path
+    if legacy_path.exists():
+        return legacy_path
+    return new_path
 
 
 @dataclass
@@ -21,9 +34,11 @@ class AppConfig:
 
 
 def load_config(
-    config_path: Path = DEFAULT_CONFIG_PATH,
+    config_path: Path | None = None,
     provider_override: str | None = None,
 ) -> AppConfig:
+    if config_path is None:
+        config_path = resolve_config_path()
     raw = _read_config_file(config_path)
 
     if provider_override:
@@ -55,7 +70,7 @@ def load_config(
     for req_field in PROVIDER_REQUIRED_FIELDS.get(provider_name, []):
         if req_field not in provider_config:
             raise ConfigError(
-                f"Provider '{provider_name}' requires '{req_field}' in ~/.tenorrc"
+                f"Provider '{provider_name}' requires '{req_field}' in ~/.config/tenor/config.yaml"
             )
 
     return AppConfig(provider_name=provider_name, provider_config=provider_config)
