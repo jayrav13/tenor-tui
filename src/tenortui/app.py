@@ -8,9 +8,12 @@ from textual.containers import Vertical
 
 from tenortui.config import load_config
 from tenortui.exceptions import ConfigError, ProviderError, SymbolNotFoundError
+from tenortui.history import load_history, add_to_history
 from tenortui.providers import PROVIDERS
+from tenortui.providers.yahoo import batch_quotes
 from tenortui.widgets.chain_table import ChainTable
 from tenortui.widgets.expiry_selector import ExpirySelector
+from tenortui.widgets.recently_viewed import RecentlyViewed
 from tenortui.widgets.status_bar import StatusBar
 from tenortui.widgets.ticker_bar import TickerBar
 
@@ -32,16 +35,25 @@ class TenorTUI(App):
         self._current_expiration: str | None = None
         self._current_price: float | None = None
         self._loading_ticker: bool = False
+        self._history = load_history()
 
     def compose(self) -> ComposeResult:
         yield TickerBar()
         with Vertical(id="main-content"):
             yield ExpirySelector()
+            yield RecentlyViewed(symbols=self._history)
             yield ChainTable()
         yield StatusBar(provider_name=self._provider.name)
 
     def on_mount(self) -> None:
         self.query_one(TickerBar).focus_input()
+        chain_table = self.query_one(ChainTable)
+        recently_viewed = self.query_one(RecentlyViewed)
+        if self._history:
+            chain_table.display = False
+            self._fetch_recent_quotes()
+        else:
+            recently_viewed.display = False
 
     def on_ticker_bar_ticker_submitted(self, event: TickerBar.TickerSubmitted) -> None:
         self._current_symbol = event.symbol
@@ -59,6 +71,11 @@ class TenorTUI(App):
         if self._current_symbol:
             self._load_ticker(self._current_symbol)
 
+    @work(exclusive=True, group="recent")
+    async def _fetch_recent_quotes(self) -> None:
+        quotes = await asyncio.to_thread(batch_quotes, self._history)
+        self.query_one(RecentlyViewed).update_quotes(quotes)
+
     @work(exclusive=True, group="ticker")
     async def _load_ticker(self, symbol: str) -> None:
         ticker_bar = self.query_one(TickerBar)
@@ -68,10 +85,15 @@ class TenorTUI(App):
         chain_table.loading = True
         self._loading_ticker = True
 
+        recently_viewed = self.query_one(RecentlyViewed)
+        recently_viewed.display = False
+        chain_table.display = True
+
         try:
             quote = await asyncio.to_thread(self._provider.get_quote, symbol)
             self._current_price = quote.price
             ticker_bar.show_quote(quote)
+            self._history = add_to_history(symbol)
         except SymbolNotFoundError:
             ticker_bar.show_error(f"Symbol '{symbol}' not found")
             chain_table.loading = False
@@ -120,7 +142,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="tenortui",
         description="Terminal UI for browsing stock options chains",
-        epilog="Provider config in ~/.tenorrc:\n  yahoo: no config needed\n  tradier: requires 'api_key', optional 'sandbox' (default: false)",
+        epilog="Provider config in ~/.config/tenor/config.yaml:\n  yahoo: no config needed\n  tradier: requires 'api_key', optional 'sandbox' (default: false)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
