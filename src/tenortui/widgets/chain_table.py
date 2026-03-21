@@ -84,16 +84,13 @@ class ChainTable(Widget):
         )
         puts_atm = self._populate_table(puts_table, columns, chain.puts, current_price)
 
-        # Scroll to ATM area, then place cursor on ATM row
-        # First scroll past ATM to push it into view, then move cursor back to ATM
+        # Place cursor on ATM row, then center it in the viewport after render
         if calls_atm is not None:
-            scroll_target = min(calls_atm + 5, calls_table.row_count - 1)
-            calls_table.move_cursor(row=scroll_target)
             calls_table.move_cursor(row=calls_atm)
+            self._center_on_row(calls_table, calls_atm)
         if puts_atm is not None:
-            scroll_target = min(puts_atm + 5, puts_table.row_count - 1)
-            puts_table.move_cursor(row=scroll_target)
             puts_table.move_cursor(row=puts_atm)
+            self._center_on_row(puts_table, puts_atm)
 
     def _populate_table(self, table, columns, contracts, current_price) -> int | None:
         """Populate table and return the ATM row index (or None)."""
@@ -137,6 +134,18 @@ class ChainTable(Widget):
             row_count += 1
 
         return atm_row_idx
+
+    def _center_on_row(self, table: DataTable, row_idx: int) -> None:
+        """Scroll so the given row is centered in the table's viewport."""
+
+        def _do_center():
+            viewport_h = table.scrollable_content_region.height
+            if viewport_h > 0:
+                # Each row is 1 unit; +1 accounts for the header row
+                target_y = max(0, (row_idx + 1) - viewport_h // 2)
+                table.scroll_to(0, target_y, animate=False)
+
+        self.call_after_refresh(_do_center)
 
     async def show_message(self, text: str) -> None:
         container = self.query_one(VerticalScroll)
