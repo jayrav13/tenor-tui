@@ -17,14 +17,25 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-in-project: true
+
+      - name: Load cached venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-lint-${{ hashFiles('**/poetry.lock') }}
+
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: poetry install
 
       - name: Lint
-        run: ruff check src/ tests/
+        run: poetry run ruff check src/ tests/
 
       - name: Format check
-        run: ruff format --check src/ tests/
+        run: poetry run ruff format --check src/ tests/
 
   test:
     runs-on: ubuntu-latest
@@ -40,8 +51,19 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-in-project: true
+
+      - name: Load cached venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: venv-test-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: poetry install
 
       - name: Run tests with coverage
-        run: python -m pytest -v --cov=tenortui --cov-report=term-missing --cov-fail-under=90
+        run: poetry run python -m pytest -v --cov=tenortui --cov-report=term-missing --cov-fail-under=90

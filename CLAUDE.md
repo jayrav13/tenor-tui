@@ -5,25 +5,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
-# Install (editable, with dev deps)
-pip install -e ".[dev]"
+# Install (with dev deps)
+poetry install
 
 # Run the app
-tenortui
-tenortui --provider tradier
+poetry run tenortui
+poetry run tenortui --provider tradier
 
 # Run all tests
-python -m pytest -v
+poetry run python -m pytest -v
 
 # Run a single test file or test
-python -m pytest tests/test_models.py -v
-python -m pytest tests/test_models.py::test_mid_price -v
+poetry run python -m pytest tests/test_models.py -v
+poetry run python -m pytest tests/test_models.py::test_mid_price -v
 
 # Lint
-ruff check src/ tests/
+poetry run ruff check src/ tests/
 
 # Format check (add --fix to auto-format)
-ruff format --check src/ tests/
+poetry run ruff format --check src/ tests/
 
 # Watch CI status for a PR
 bin/ci-watch <pr-number>             # Single check
