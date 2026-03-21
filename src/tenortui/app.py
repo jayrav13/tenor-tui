@@ -82,6 +82,17 @@ class TenorTUI(App):
     def action_command_palette(self) -> None:
         self.query_one(CommandPalette).open()
 
+    def _focus_first_table(self) -> None:
+        """Focus the first (calls) DataTable so j/k navigation works immediately."""
+        from textual.widgets import DataTable
+
+        try:
+            tables = self.query_one(ChainTable).query(DataTable)
+            if tables:
+                tables.first().focus()
+        except Exception:
+            pass
+
     def _input_has_focus(self) -> bool:
         """Check if any text input widget has focus."""
         focused = self.focused
@@ -223,6 +234,7 @@ class TenorTUI(App):
         chain_table.loading = False
         self._loading_ticker = False
         self.query_one(StatusBar).update_refresh_time()
+        self._focus_first_table()
 
     @work(exclusive=True, group="chain")
     async def _load_chain(self, symbol: str, expiration: str) -> None:
@@ -240,6 +252,7 @@ class TenorTUI(App):
 
         chain_table.loading = False
         self.query_one(StatusBar).update_refresh_time()
+        self._focus_first_table()
 
 
 def _parse_args() -> argparse.Namespace:
