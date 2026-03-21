@@ -43,7 +43,7 @@ class CommandPalette(Widget):
         self.display = True
         cmd_input = self.query_one("#cmd-input", Input)
         cmd_input.value = ""
-        cmd_input.focus()
+        self.call_after_refresh(cmd_input.focus)
 
     def close(self) -> None:
         self.display = False
