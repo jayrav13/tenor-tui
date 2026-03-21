@@ -4,11 +4,13 @@ import sys
 
 from textual import work
 from textual.app import App, ComposeResult
+from textual.binding import Binding
 from textual.containers import Vertical
 
 from tenortui.config import load_config
 from tenortui.exceptions import ConfigError, ProviderError, SymbolNotFoundError
 from tenortui.history import load_history, add_to_history
+from tenortui.market_hours import MarketState, get_market_state
 from tenortui.providers import PROVIDERS
 from tenortui.providers.yahoo import batch_quotes
 from tenortui.widgets.chain_table import ChainTable
@@ -29,7 +31,11 @@ class TenorTUI(App):
         ("slash", "focus_search", "Search"),
         ("s", "focus_search", "Search"),
         ("ctrl+r", "refresh", "Refresh"),
+        Binding("ctrl+p", "toggle_auto_refresh", "Pause Refresh", priority=True),
     ]
+
+    DEFAULT_REFRESH_INTERVAL = 60  # seconds
+    OFF_HOURS_REFRESH_INTERVAL = 300  # 5 minutes when market closed
 
     def __init__(self, provider):
         super().__init__()
@@ -39,6 +45,10 @@ class TenorTUI(App):
         self._current_price: float | None = None
         self._loading_ticker: bool = False
         self._history = load_history()
+        self._auto_refresh_enabled: bool = True
+        self._auto_refresh_countdown: int = 0
+        self._refresh_timer = None
+        self._countdown_timer = None
 
     def compose(self) -> ComposeResult:
         yield TickerBar()
@@ -57,6 +67,9 @@ class TenorTUI(App):
             self._fetch_recent_quotes()
         else:
             recently_viewed.display = False
+        self._update_market_display()
+        # Update market state display every 60s
+        self.set_interval(60, self._update_market_display)
 
     def on_ticker_bar_ticker_submitted(self, event: TickerBar.TickerSubmitted) -> None:
         self._current_symbol = event.symbol
@@ -81,6 +94,66 @@ class TenorTUI(App):
 
     def action_command_palette(self) -> None:
         self.query_one(CommandPalette).open()
+
+    def action_toggle_auto_refresh(self) -> None:
+        """Toggle auto-refresh on/off."""
+        self._auto_refresh_enabled = not self._auto_refresh_enabled
+        if self._auto_refresh_enabled:
+            self._start_auto_refresh()
+        else:
+            self._stop_auto_refresh()
+            self.query_one(StatusBar).update_refresh_status(paused=True)
+
+    def _get_refresh_interval(self) -> int:
+        """Get refresh interval based on market state."""
+        state = get_market_state()
+        if state == MarketState.REGULAR:
+            return self.DEFAULT_REFRESH_INTERVAL
+        elif state in (MarketState.PRE_MARKET, MarketState.AFTER_HOURS):
+            return self.DEFAULT_REFRESH_INTERVAL * 2  # 2x during extended hours
+        else:
+            return self.OFF_HOURS_REFRESH_INTERVAL
+
+    def _start_auto_refresh(self) -> None:
+        """Start the auto-refresh timer."""
+        self._stop_auto_refresh()
+        interval = self._get_refresh_interval()
+        self._auto_refresh_countdown = interval
+        self._refresh_timer = self.set_timer(interval, self._on_auto_refresh)
+        self._countdown_timer = self.set_interval(1, self._on_countdown_tick)
+        self.query_one(StatusBar).update_refresh_status(seconds_until=interval)
+
+    def _stop_auto_refresh(self) -> None:
+        """Stop the auto-refresh timer."""
+        if self._refresh_timer is not None:
+            self._refresh_timer.stop()
+            self._refresh_timer = None
+        if self._countdown_timer is not None:
+            self._countdown_timer.stop()
+            self._countdown_timer = None
+
+    def _on_countdown_tick(self) -> None:
+        """Update the countdown display every second."""
+        if self._auto_refresh_countdown > 0:
+            self._auto_refresh_countdown -= 1
+        self.query_one(StatusBar).update_refresh_status(
+            seconds_until=self._auto_refresh_countdown
+        )
+
+    def _on_auto_refresh(self) -> None:
+        """Fired when the auto-refresh timer expires."""
+        if self._current_symbol and self._auto_refresh_enabled:
+            if self._current_expiration:
+                self._load_chain(self._current_symbol, self._current_expiration)
+            else:
+                self._load_ticker(self._current_symbol)
+        # Restart with potentially different interval (market state may have changed)
+        if self._auto_refresh_enabled:
+            self._start_auto_refresh()
+
+    def _update_market_display(self) -> None:
+        """Update the market state in the status bar."""
+        self.query_one(StatusBar).update_market_state()
 
     def _focus_first_table(self) -> None:
         """Focus the first (calls) DataTable so j/k navigation works immediately."""
@@ -235,6 +308,8 @@ class TenorTUI(App):
         self._loading_ticker = False
         self.query_one(StatusBar).update_refresh_time()
         self._focus_first_table()
+        if self._auto_refresh_enabled:
+            self._start_auto_refresh()
 
     @work(exclusive=True, group="chain")
     async def _load_chain(self, symbol: str, expiration: str) -> None:
