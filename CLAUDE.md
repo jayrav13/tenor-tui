@@ -88,6 +88,10 @@ All design docs and implementation plans must be persisted to this repo (under `
 
 Every change follows this process: Issue -> Branch -> Commit -> PR -> Merge -> Cleanup.
 
+### Task Selection & Coordination
+
+When given free reign to pick a task, check GitHub issues for the `in progress` label before selecting. This label indicates another Claude instance is already working on that issue. When you start work on an issue, **add the `in progress` label** to signal to other instances. Remove it when the PR is merged or work is abandoned.
+
 ### 1. Create Issue
 
 - Create a GitHub issue describing the work
