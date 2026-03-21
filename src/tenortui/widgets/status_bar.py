@@ -41,7 +41,10 @@ class StatusBar(Widget):
     def compose(self) -> ComposeResult:
         with Horizontal():
             yield Static(self._provider_name, classes="status-provider")
-            yield Static("Ctrl+R: Refresh | /: Search | q: Quit", classes="status-keys")
+            yield Static(
+                "? Help | / Search | r Refresh | : Command | q Quit",
+                classes="status-keys",
+            )
             yield Static(self._last_refresh, classes="status-time", id="status-time")
 
     def update_refresh_time(self) -> None:

@@ -186,3 +186,25 @@ async def test_r_triggers_refresh(fake_provider, monkeypatch):
         await app.workers.wait_for_complete()
         # Should not crash, ticker still loaded
         assert app._current_symbol == "AAPL"
+
+
+# --- Status Bar ---
+
+from tenortui.widgets.status_bar import StatusBar
+
+
+@pytest.mark.asyncio
+async def test_status_bar_shows_help_hint():
+    """Status bar displays '?' help hint."""
+
+    class StatusTestApp(App):
+        def compose(self):
+            yield StatusBar(provider_name="yahoo")
+
+    app = StatusTestApp()
+    async with app.run_test():
+        bar = app.query_one(StatusBar)
+        keys_widget = bar.query_one(".status-keys")
+        rendered = keys_widget.render().plain
+        assert "?" in rendered
+        assert "Help" in rendered
