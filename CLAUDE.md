@@ -78,6 +78,8 @@ Textual CSS lives in `src/tenortui/styles/app.tcss`. Widgets also define `DEFAUL
 
 Tests use `FakeProvider` from `conftest.py` to avoid real API calls. `pytest-asyncio` is used for async test support.
 
+**Every commit must include tests that cover the changes being made.** New features require tests for the new functionality. Bug fixes require a test that reproduces the bug. Refactors must not reduce coverage. CI enforces this — PRs without adequate test coverage should not be merged.
+
 ## Planning
 
 All design docs and implementation plans must be persisted to this repo (under `docs/`) and committed to the feature branch before creating a PR.
