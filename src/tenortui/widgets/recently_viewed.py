@@ -45,7 +45,9 @@ class RecentlyViewed(Widget):
 
     def compose(self) -> ComposeResult:
         if not self._symbols:
-            yield Static("Search for a ticker to view options chain", classes="rv-empty")
+            yield Static(
+                "Search for a ticker to view options chain", classes="rv-empty"
+            )
             return
         yield Static("Recently Viewed", classes="rv-title")
         yield Static("Loading quotes...", classes="rv-loading", id="rv-loading")

@@ -80,7 +80,9 @@ class TradierProvider:
                 calls.append(contract)
             else:
                 puts.append(contract)
-        return OptionsChain(symbol=symbol.upper(), expiration=expiration, calls=calls, puts=puts)
+        return OptionsChain(
+            symbol=symbol.upper(), expiration=expiration, calls=calls, puts=puts
+        )
 
     @staticmethod
     def _to_contract(opt: dict) -> OptionContract:

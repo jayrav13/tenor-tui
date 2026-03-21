@@ -18,6 +18,17 @@ python -m pytest -v
 # Run a single test file or test
 python -m pytest tests/test_models.py -v
 python -m pytest tests/test_models.py::test_mid_price -v
+
+# Lint
+ruff check src/ tests/
+
+# Format check (add --fix to auto-format)
+ruff format --check src/ tests/
+
+# Watch CI status for a PR
+bin/ci-watch <pr-number>             # Single check
+bin/ci-watch <pr-number> --poll      # Poll until pass/fail
+bin/ci-watch <pr-number> --poll 15   # Custom interval (seconds)
 ```
 
 ## Architecture

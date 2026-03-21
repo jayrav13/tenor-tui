@@ -6,7 +6,7 @@ import requests as req
 import pytest
 
 from tenortui.providers.tradier import TradierProvider
-from tenortui.exceptions import SymbolNotFoundError, ProviderError
+from tenortui.exceptions import SymbolNotFoundError
 from tenortui.models import Quote, OptionsChain
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -30,7 +30,9 @@ class TestTradierProviderGetQuote:
     def test_returns_quote(self):
         data = _load_fixture("tradier_quote.json")
         provider = TradierProvider(api_key="test", sandbox=False)
-        with patch("tenortui.providers.tradier.requests.get", return_value=_mock_response(data)):
+        with patch(
+            "tenortui.providers.tradier.requests.get", return_value=_mock_response(data)
+        ):
             quote = provider.get_quote("AAPL")
         assert isinstance(quote, Quote)
         assert quote.symbol == "AAPL"
@@ -41,7 +43,9 @@ class TestTradierProviderGetQuote:
     def test_symbol_not_found(self):
         data = {"quotes": {"unmatched_symbols": {"symbol": ["FAKESYMBOL"]}}}
         provider = TradierProvider(api_key="test", sandbox=False)
-        with patch("tenortui.providers.tradier.requests.get", return_value=_mock_response(data)):
+        with patch(
+            "tenortui.providers.tradier.requests.get", return_value=_mock_response(data)
+        ):
             with pytest.raises(SymbolNotFoundError):
                 provider.get_quote("FAKESYMBOL")
 
@@ -54,7 +58,9 @@ class TestTradierProviderGetExpirations:
     def test_returns_expirations(self):
         data = _load_fixture("tradier_expirations.json")
         provider = TradierProvider(api_key="test", sandbox=False)
-        with patch("tenortui.providers.tradier.requests.get", return_value=_mock_response(data)):
+        with patch(
+            "tenortui.providers.tradier.requests.get", return_value=_mock_response(data)
+        ):
             result = provider.get_expirations("AAPL")
         assert result == ["2026-03-21", "2026-03-28", "2026-04-04"]
 
@@ -63,7 +69,9 @@ class TestTradierProviderGetChain:
     def test_returns_chain_with_greeks(self):
         data = _load_fixture("tradier_chain.json")
         provider = TradierProvider(api_key="test", sandbox=False)
-        with patch("tenortui.providers.tradier.requests.get", return_value=_mock_response(data)):
+        with patch(
+            "tenortui.providers.tradier.requests.get", return_value=_mock_response(data)
+        ):
             chain = provider.get_chain("AAPL", "2026-03-21")
         assert isinstance(chain, OptionsChain)
         assert len(chain.calls) == 1
