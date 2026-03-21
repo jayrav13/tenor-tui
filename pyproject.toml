@@ -22,6 +22,7 @@ tenortui = "tenortui.app:main"
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
+    "pytest-cov>=4.0",
     "pandas",
     "ruff>=0.4",
 ]
