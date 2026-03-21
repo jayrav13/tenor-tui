@@ -12,7 +12,9 @@ from tenortui.history import load_history, add_to_history
 from tenortui.providers import PROVIDERS
 from tenortui.providers.yahoo import batch_quotes
 from tenortui.widgets.chain_table import ChainTable
+from tenortui.widgets.command_palette import CommandPalette
 from tenortui.widgets.expiry_selector import ExpirySelector
+from tenortui.widgets.help_overlay import HelpOverlay
 from tenortui.widgets.recently_viewed import RecentlyViewed
 from tenortui.widgets.status_bar import StatusBar
 from tenortui.widgets.ticker_bar import TickerBar
@@ -44,6 +46,7 @@ class TenorTUI(App):
             yield RecentlyViewed(symbols=self._history)
             yield ChainTable()
         yield StatusBar(provider_name=self._provider.name)
+        yield CommandPalette()
 
     def on_mount(self) -> None:
         self.query_one(TickerBar).focus_input()
@@ -72,6 +75,92 @@ class TenorTUI(App):
     def action_refresh(self) -> None:
         if self._current_symbol:
             self._load_ticker(self._current_symbol)
+
+    def action_help(self) -> None:
+        self.push_screen(HelpOverlay())
+
+    def action_command_palette(self) -> None:
+        self.query_one(CommandPalette).open()
+
+    def _input_has_focus(self) -> bool:
+        """Check if any text input widget has focus."""
+        focused = self.focused
+        if focused is None:
+            return False
+        from textual.widgets import Input
+
+        return isinstance(focused, Input)
+
+    def on_key(self, event) -> None:
+        """Handle vim-style navigation keys when no input is focused."""
+        if self._input_has_focus():
+            return
+
+        from textual.widgets import DataTable, ListView
+
+        key = event.key
+
+        if key == "question_mark":
+            self.action_help()
+            event.prevent_default()
+        elif key == "colon":
+            self.action_command_palette()
+            event.prevent_default()
+        elif key == "j":
+            if isinstance(self.focused, DataTable):
+                self.focused.action_cursor_down()
+                event.prevent_default()
+            elif isinstance(self.focused, ListView):
+                self.focused.action_cursor_down()
+                event.prevent_default()
+        elif key == "k":
+            if isinstance(self.focused, DataTable):
+                self.focused.action_cursor_up()
+                event.prevent_default()
+            elif isinstance(self.focused, ListView):
+                self.focused.action_cursor_up()
+                event.prevent_default()
+        elif key == "g":
+            if isinstance(self.focused, DataTable):
+                self.focused.move_cursor(row=0)
+                event.prevent_default()
+            elif isinstance(self.focused, ListView):
+                self.focused.index = 0
+                event.prevent_default()
+        elif key == "G":
+            if isinstance(self.focused, DataTable):
+                self.focused.move_cursor(row=self.focused.row_count - 1)
+                event.prevent_default()
+            elif isinstance(self.focused, ListView):
+                count = len(self.focused.children)
+                if count > 0:
+                    self.focused.index = count - 1
+                event.prevent_default()
+        elif key == "l":
+            self.action_focus_next()
+            event.prevent_default()
+        elif key == "h":
+            self.action_focus_previous()
+            event.prevent_default()
+        elif key == "r":
+            self.action_refresh()
+            event.prevent_default()
+
+    def on_command_palette_command_submitted(
+        self, event: CommandPalette.CommandSubmitted
+    ) -> None:
+        """Handle commands from the command palette."""
+        cmd = event.command.lower().strip()
+        if cmd in ("q", "quit"):
+            self.exit()
+        elif cmd == "help":
+            self.action_help()
+        elif cmd.startswith("search ") or cmd.startswith("s "):
+            parts = cmd.split(None, 1)
+            if len(parts) == 2:
+                symbol = parts[1].strip().upper()
+                self._current_symbol = symbol
+                self._load_ticker(symbol)
 
     @work(exclusive=True, group="recent")
     async def _fetch_recent_quotes(self) -> None:

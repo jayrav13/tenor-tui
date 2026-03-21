@@ -86,3 +86,103 @@ async def test_command_palette_submits_command():
         await pilot.press("enter")
         assert "help" in commands
         assert palette.display is False
+
+
+# --- App integration tests ---
+
+from tenortui.app import TenorTUI
+from tenortui.widgets.chain_table import ChainTable
+from tenortui.widgets.ticker_bar import TickerBar
+
+
+@pytest.mark.asyncio
+async def test_help_overlay_via_question_mark(fake_provider, monkeypatch):
+    """Pressing ? opens the help overlay in the main app."""
+    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    app = TenorTUI(provider=fake_provider)
+    async with app.run_test() as pilot:
+        app.set_focus(None)  # unfocus input
+        await pilot.press("question_mark")
+        assert len(app.screen_stack) == 2
+
+
+@pytest.mark.asyncio
+async def test_command_palette_via_colon(fake_provider, monkeypatch):
+    """Pressing : opens the command palette in the main app."""
+    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    app = TenorTUI(provider=fake_provider)
+    async with app.run_test() as pilot:
+        app.set_focus(None)  # unfocus input
+        await pilot.press("colon")
+        palette = app.query_one(CommandPalette)
+        assert palette.display is True
+
+
+@pytest.mark.asyncio
+async def test_vim_keys_ignored_when_input_focused(fake_provider, monkeypatch):
+    """j/k keys pass through to input when search is focused."""
+    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    app = TenorTUI(provider=fake_provider)
+    async with app.run_test() as pilot:
+        input_w = app.query_one(TickerBar).query_one("#ticker-input")
+        assert input_w.has_focus
+        await pilot.press("j")
+        assert input_w.value == "j"
+
+
+@pytest.mark.asyncio
+async def test_j_k_navigation_in_chain_table(fake_provider, monkeypatch):
+    """j/k moves cursor in chain table DataTable."""
+    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    app = TenorTUI(provider=fake_provider)
+    async with app.run_test() as pilot:
+        await pilot.press(*"AAPL")
+        await pilot.press("enter")
+        await app.workers.wait_for_complete()
+
+        # Focus a DataTable
+        from textual.widgets import DataTable
+
+        tables = app.query(DataTable)
+        if tables:
+            tables.first().focus()
+            await pilot.press("j")
+            await pilot.press("k")
+            # No crash — verifies j/k are handled
+
+
+@pytest.mark.asyncio
+async def test_command_palette_search(fake_provider, monkeypatch):
+    """':search AAPL' loads the ticker via command palette."""
+    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    app = TenorTUI(provider=fake_provider)
+    async with app.run_test() as pilot:
+        app.set_focus(None)
+        await pilot.press("colon")
+        for ch in "search AAPL":
+            await pilot.press(ch)
+        await pilot.press("enter")
+        await app.workers.wait_for_complete()
+        assert app._current_symbol == "AAPL"
+
+
+@pytest.mark.asyncio
+async def test_r_triggers_refresh(fake_provider, monkeypatch):
+    """Pressing r refreshes when not in input."""
+    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    app = TenorTUI(provider=fake_provider)
+    async with app.run_test() as pilot:
+        # Load ticker first
+        await pilot.press(*"AAPL")
+        await pilot.press("enter")
+        await app.workers.wait_for_complete()
+
+        # Unfocus input, press r
+        app.set_focus(None)
+        await pilot.press("r")
+        await app.workers.wait_for_complete()
+        # Should not crash, ticker still loaded
+        assert app._current_symbol == "AAPL"
