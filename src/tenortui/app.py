@@ -49,6 +49,7 @@ class TenorTUI(App):
         yield CommandPalette()
 
     def on_mount(self) -> None:
+        self.set_focus(None)
         chain_table = self.query_one(ChainTable)
         recently_viewed = self.query_one(RecentlyViewed)
         if self._history:
