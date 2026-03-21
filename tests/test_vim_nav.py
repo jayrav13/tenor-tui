@@ -122,7 +122,9 @@ async def test_vim_keys_ignored_when_input_focused(fake_provider, monkeypatch):
     monkeypatch.setattr("tenortui.app.load_history", lambda: [])
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
+        # Focus search first (input no longer focused on launch)
         input_w = app.query_one(TickerBar).query_one("#ticker-input")
+        input_w.focus()
         assert input_w.has_focus
         await pilot.press("j")
         assert input_w.value == "j"
