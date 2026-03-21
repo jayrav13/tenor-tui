@@ -9,23 +9,22 @@ class CommandPalette(Widget):
     DEFAULT_CSS = """
     CommandPalette {
         dock: bottom;
-        height: 1;
+        height: 3;
         display: none;
         background: $surface;
     }
     CommandPalette Horizontal {
-        height: 1;
+        height: 3;
+        align: left middle;
     }
     CommandPalette .cmd-prefix {
         width: 2;
         color: $accent;
-        padding: 0 0 0 1;
+        padding: 1 0 0 1;
     }
     CommandPalette Input {
         width: 1fr;
         border: none;
-        height: 1;
-        padding: 0;
     }
     """
 
