@@ -31,6 +31,30 @@ bin/ci-watch <pr-number> --poll      # Poll until pass/fail
 bin/ci-watch <pr-number> --poll 15   # Custom interval (seconds)
 ```
 
+## Git Hooks
+
+This project uses [`pre-commit`](https://pre-commit.com/) for git hooks.
+
+### Setup
+
+```bash
+pre-commit install && pre-commit install --hook-type pre-push
+```
+
+### What runs
+
+- **Pre-commit:** `ruff check` (lint) and `ruff format --check` (format) on staged Python files
+- **Pre-push:** `python -m pytest` (full test suite)
+
+### Bypass
+
+Use `--no-verify` to skip hooks when needed:
+
+```bash
+git commit --no-verify -m "WIP"
+git push --no-verify
+```
+
 ## Architecture
 
 TenorTUI is a Textual-based terminal app for browsing stock options chains. Python 3.11+, built with hatchling.
