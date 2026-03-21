@@ -87,5 +87,7 @@ def _read_config_file(path: Path) -> dict:
     if data is None:
         return {}
     if not isinstance(data, dict):
-        raise ConfigError(f"Config file {path} must be a YAML mapping, got {type(data).__name__}")
+        raise ConfigError(
+            f"Config file {path} must be a YAML mapping, got {type(data).__name__}"
+        )
     return data

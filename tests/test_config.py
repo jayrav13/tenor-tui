@@ -1,5 +1,4 @@
 import pytest
-from pathlib import Path
 
 from tenortui.config import load_config, resolve_config_path
 from tenortui.exceptions import ConfigError

@@ -53,13 +53,19 @@ class YahooProvider:
             ticker = yf.Ticker(symbol)
             chain = ticker.option_chain(expiration)
         except Exception as e:
-            raise ProviderError(f"Failed to fetch chain for {symbol} {expiration}: {e}") from e
+            raise ProviderError(
+                f"Failed to fetch chain for {symbol} {expiration}: {e}"
+            ) from e
 
         return OptionsChain(
             symbol=symbol.upper(),
             expiration=expiration,
-            calls=[self._row_to_contract(row, "call") for _, row in chain.calls.iterrows()],
-            puts=[self._row_to_contract(row, "put") for _, row in chain.puts.iterrows()],
+            calls=[
+                self._row_to_contract(row, "call") for _, row in chain.calls.iterrows()
+            ],
+            puts=[
+                self._row_to_contract(row, "put") for _, row in chain.puts.iterrows()
+            ],
         )
 
     @staticmethod
@@ -74,7 +80,11 @@ class YahooProvider:
             volume=_safe_int(row.get("volume")),
             open_interest=_safe_int(row.get("openInterest")),
             implied_volatility=_safe_float(row.get("impliedVolatility")),
-            delta=None, gamma=None, theta=None, vega=None, rho=None,
+            delta=None,
+            gamma=None,
+            theta=None,
+            vega=None,
+            rho=None,
         )
 
 
@@ -94,15 +104,17 @@ def batch_quotes(symbols: list[str]) -> list[Quote]:
             info = ticker.info
             if not info.get("regularMarketPrice"):
                 continue
-            quotes.append(Quote(
-                symbol=symbol,
-                name=info.get("shortName", symbol),
-                price=info["regularMarketPrice"],
-                change=info.get("regularMarketChange", 0.0),
-                change_percent=info.get("regularMarketChangePercent", 0.0),
-                volume=info.get("regularMarketVolume", 0),
-                market_cap=info.get("marketCap"),
-            ))
+            quotes.append(
+                Quote(
+                    symbol=symbol,
+                    name=info.get("shortName", symbol),
+                    price=info["regularMarketPrice"],
+                    change=info.get("regularMarketChange", 0.0),
+                    change_percent=info.get("regularMarketChangePercent", 0.0),
+                    volume=info.get("regularMarketVolume", 0),
+                    market_cap=info.get("marketCap"),
+                )
+            )
         except Exception:
             continue
     return quotes

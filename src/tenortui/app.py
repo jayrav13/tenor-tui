@@ -59,7 +59,9 @@ class TenorTUI(App):
         self._current_symbol = event.symbol
         self._load_ticker(event.symbol)
 
-    def on_expiry_selector_expiry_selected(self, event: ExpirySelector.ExpirySelected) -> None:
+    def on_expiry_selector_expiry_selected(
+        self, event: ExpirySelector.ExpirySelected
+    ) -> None:
         self._current_expiration = event.expiration
         if self._current_symbol and not self._loading_ticker:
             self._load_chain(self._current_symbol, event.expiration)
@@ -106,12 +108,16 @@ class TenorTUI(App):
             return
 
         try:
-            expirations = await asyncio.to_thread(self._provider.get_expirations, symbol)
+            expirations = await asyncio.to_thread(
+                self._provider.get_expirations, symbol
+            )
             await expiry_selector.set_expirations(expirations)
 
             if expirations:
                 self._current_expiration = expirations[0]
-                chain = await asyncio.to_thread(self._provider.get_chain, symbol, expirations[0])
+                chain = await asyncio.to_thread(
+                    self._provider.get_chain, symbol, expirations[0]
+                )
                 await chain_table.display_chain(chain, self._current_price)
             else:
                 await chain_table.show_message(f"No options available for {symbol}")
@@ -129,7 +135,9 @@ class TenorTUI(App):
         chain_table.loading = True
 
         try:
-            chain = await asyncio.to_thread(self._provider.get_chain, symbol, expiration)
+            chain = await asyncio.to_thread(
+                self._provider.get_chain, symbol, expiration
+            )
             await chain_table.display_chain(chain, self._current_price)
         except ProviderError as e:
             await chain_table.show_message(str(e))

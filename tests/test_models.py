@@ -40,7 +40,11 @@ class TestOptionContract:
             volume=1234,
             open_interest=8901,
             implied_volatility=0.32,
-            delta=0.81, gamma=0.03, theta=-0.15, vega=0.25, rho=0.10,
+            delta=0.81,
+            gamma=0.03,
+            theta=-0.15,
+            vega=0.25,
+            rho=0.10,
         )
         assert c.mid == (14.20 + 14.50) / 2
 
@@ -49,11 +53,17 @@ class TestOptionContract:
             contract_symbol="AAPL260321C00500000",
             option_type="call",
             strike=500.0,
-            bid=0.0, ask=0.01,
+            bid=0.0,
+            ask=0.01,
             last_price=0.01,
-            volume=0, open_interest=0,
+            volume=0,
+            open_interest=0,
             implied_volatility=0.0,
-            delta=None, gamma=None, theta=None, vega=None, rho=None,
+            delta=None,
+            gamma=None,
+            theta=None,
+            vega=None,
+            rho=None,
         )
         assert c.mid == 0.005
 
@@ -62,11 +72,17 @@ class TestOptionContract:
             contract_symbol="AAPL260321C00200000",
             option_type="call",
             strike=200.0,
-            bid=14.20, ask=14.50,
+            bid=14.20,
+            ask=14.50,
             last_price=14.35,
-            volume=1234, open_interest=8901,
+            volume=1234,
+            open_interest=8901,
             implied_volatility=0.32,
-            delta=None, gamma=None, theta=None, vega=None, rho=None,
+            delta=None,
+            gamma=None,
+            theta=None,
+            vega=None,
+            rho=None,
         )
         assert c.delta is None
         assert c.gamma is None
@@ -75,18 +91,34 @@ class TestOptionContract:
         with_greeks = OptionContract(
             contract_symbol="AAPL260321C00200000",
             option_type="call",
-            strike=200.0, bid=14.20, ask=14.50,
-            last_price=14.35, volume=1234, open_interest=8901,
+            strike=200.0,
+            bid=14.20,
+            ask=14.50,
+            last_price=14.35,
+            volume=1234,
+            open_interest=8901,
             implied_volatility=0.32,
-            delta=0.81, gamma=0.03, theta=-0.15, vega=0.25, rho=0.10,
+            delta=0.81,
+            gamma=0.03,
+            theta=-0.15,
+            vega=0.25,
+            rho=0.10,
         )
         without_greeks = OptionContract(
             contract_symbol="AAPL260321C00200000",
             option_type="call",
-            strike=200.0, bid=14.20, ask=14.50,
-            last_price=14.35, volume=1234, open_interest=8901,
+            strike=200.0,
+            bid=14.20,
+            ask=14.50,
+            last_price=14.35,
+            volume=1234,
+            open_interest=8901,
             implied_volatility=0.32,
-            delta=None, gamma=None, theta=None, vega=None, rho=None,
+            delta=None,
+            gamma=None,
+            theta=None,
+            vega=None,
+            rho=None,
         )
         assert with_greeks.has_greeks is True
         assert without_greeks.has_greeks is False

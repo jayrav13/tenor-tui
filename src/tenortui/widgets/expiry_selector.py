@@ -41,7 +41,9 @@ class ExpirySelector(Widget):
         for exp in expirations:
             await tabbed.add_pane(TabPane(exp, Static("")))
 
-    def on_tabbed_content_tab_activated(self, event: TabbedContent.TabActivated) -> None:
+    def on_tabbed_content_tab_activated(
+        self, event: TabbedContent.TabActivated
+    ) -> None:
         label = str(event.tab.label)
         self.post_message(self.ExpirySelected(label))
 

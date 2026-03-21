@@ -18,6 +18,17 @@ python -m pytest -v
 # Run a single test file or test
 python -m pytest tests/test_models.py -v
 python -m pytest tests/test_models.py::test_mid_price -v
+
+# Lint
+ruff check src/ tests/
+
+# Format check (add --fix to auto-format)
+ruff format --check src/ tests/
+
+# Watch CI status for a PR
+bin/ci-watch <pr-number>             # Single check
+bin/ci-watch <pr-number> --poll      # Poll until pass/fail
+bin/ci-watch <pr-number> --poll 15   # Custom interval (seconds)
 ```
 
 ## Architecture
@@ -66,3 +77,107 @@ Textual CSS lives in `src/tenortui/styles/app.tcss`. Widgets also define `DEFAUL
 ### Testing
 
 Tests use `FakeProvider` from `conftest.py` to avoid real API calls. `pytest-asyncio` is used for async test support.
+
+**Every commit must include tests that cover the changes being made.** New features require tests for the new functionality. Bug fixes require a test that reproduces the bug. Refactors must not reduce coverage. CI enforces this — PRs without adequate test coverage should not be merged.
+
+## Planning
+
+All design docs and implementation plans must be persisted to this repo (under `docs/`) and committed to the feature branch before creating a PR.
+
+## Git Workflow
+
+Every change follows this process: Issue -> Branch -> Commit -> PR -> Merge -> Cleanup.
+
+### 1. Create Issue
+
+- Create a GitHub issue describing the work
+- Add the `claude` label to issues created by Claude
+- For human-created issues: add `claude:reviewed` label after reviewing (not both labels on same issue)
+- Include a **Success Criteria** section with testable checkbox items:
+  ```markdown
+  ## Success Criteria
+  - [ ] Feature X works as described
+  - [ ] All existing tests pass
+  - [ ] New tests added for feature X
+  ```
+- Note `*Co-authored by Claude*` if applicable
+
+### 2. Create Worktree & Branch
+
+**Always use git worktrees** for feature work. This enables multiple concurrent sessions without conflicts.
+
+```bash
+# Use EnterWorktree tool to create an isolated worktree
+# This creates a worktree at .claude/worktrees/<name>/ with a dedicated branch
+```
+
+Branch naming convention:
+```
+fix/<issue-number>-<brief-description>
+```
+
+Examples:
+- `fix/12-add-user-authentication`
+- `fix/34-search-api-pagination`
+
+### 3. Commit
+
+Every commit must include:
+- `Closes #<issue-number>` in the commit message body
+- Co-authorship footer:
+  ```
+  Co-Authored-By: Claude <noreply@anthropic.com>
+  ```
+
+Example:
+```
+Add user authentication with Devise
+
+Closes #12
+
+Co-Authored-By: Claude <noreply@anthropic.com>
+```
+
+### 4. Push & Create PR
+
+- Push branch to origin
+- Create PR using `gh pr create`
+- Include `*Co-authored by Claude*` in PR body
+- Always use **merge commits** (not squash)
+
+### 5. Monitor CI
+
+After pushing a PR, monitor CI status:
+
+```bash
+gh pr checks <pr-number> --watch
+```
+
+- **All passed**: notify user and await instruction to merge
+- **Failed**: investigate the failure, propose a fix — do NOT merge
+
+Do NOT merge the PR automatically. Wait for explicit user instruction to merge.
+
+### 6. Merge PR
+
+After CI passes and user gives explicit instruction:
+
+```bash
+gh pr merge <pr-number> --merge
+```
+
+### 7. Cleanup (after merge)
+
+1. Delete the remote branch (while still in the worktree session):
+   ```bash
+   git push origin --delete <branch-name>
+   ```
+
+2. **Exit the worktree** using the `ExitWorktree` tool with `action: "remove"` to delete the worktree directory and local branch, then return the session to the main repository on the `main` branch.
+
+3. **Pull latest main** to ensure the local `main` branch includes the merged changes:
+   ```bash
+   git pull
+   ```
+
+Do NOT delete the branch if CI failed — it may be needed for fixes.

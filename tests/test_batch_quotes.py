@@ -1,8 +1,6 @@
 from unittest.mock import patch, MagicMock
-import pytest
 
 from tenortui.providers.yahoo import batch_quotes
-from tenortui.models import Quote
 
 
 class TestBatchQuotes:

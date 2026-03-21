@@ -1,4 +1,4 @@
-from tenortui.providers.base import DataProvider
+from tenortui.providers.base import DataProvider as DataProvider
 from tenortui.providers.yahoo import YahooProvider
 from tenortui.providers.tradier import TradierProvider
 

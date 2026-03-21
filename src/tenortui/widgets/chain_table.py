@@ -3,15 +3,25 @@ from textual.containers import VerticalScroll
 from textual.widget import Widget
 from textual.widgets import DataTable, Static
 
-from tenortui.models import OptionContract, OptionsChain
+from tenortui.models import OptionsChain
 
 BASE_COLUMNS = [
-    ("Strike", 10), ("Bid", 8), ("Ask", 8), ("Mid", 8),
-    ("Last", 8), ("Vol", 8), ("OI", 8), ("IV", 8),
+    ("Strike", 10),
+    ("Bid", 8),
+    ("Ask", 8),
+    ("Mid", 8),
+    ("Last", 8),
+    ("Vol", 8),
+    ("OI", 8),
+    ("IV", 8),
 ]
 
 GREEK_COLUMNS = [
-    ("Delta", 8), ("Gamma", 8), ("Theta", 8), ("Vega", 8), ("Rho", 8),
+    ("Delta", 8),
+    ("Gamma", 8),
+    ("Theta", 8),
+    ("Vega", 8),
+    ("Rho", 8),
 ]
 
 
@@ -48,9 +58,13 @@ class ChainTable(Widget):
 
     def on_mount(self) -> None:
         container = self.query_one(VerticalScroll)
-        container.mount(Static("Search for a ticker to view options chain", classes="no-data"))
+        container.mount(
+            Static("Search for a ticker to view options chain", classes="no-data")
+        )
 
-    async def display_chain(self, chain: OptionsChain, current_price: float | None = None) -> None:
+    async def display_chain(
+        self, chain: OptionsChain, current_price: float | None = None
+    ) -> None:
         show_greeks = any(c.has_greeks for c in chain.calls + chain.puts)
         columns = BASE_COLUMNS + (GREEK_COLUMNS if show_greeks else [])
 
@@ -65,7 +79,9 @@ class ChainTable(Widget):
         await container.mount(Static("PUTS", classes="section-label"))
         await container.mount(puts_table)
 
-        calls_atm = self._populate_table(calls_table, columns, chain.calls, current_price)
+        calls_atm = self._populate_table(
+            calls_table, columns, chain.calls, current_price
+        )
         puts_atm = self._populate_table(puts_table, columns, chain.puts, current_price)
 
         # Scroll each table so ATM row is visible with context below
@@ -103,14 +119,18 @@ class ChainTable(Widget):
                 f"{contract.open_interest:,}",
                 f"{contract.implied_volatility:.2%}",
             ]
-            if any(col[0] in ("Delta", "Gamma", "Theta", "Vega", "Rho") for col in columns):
-                row.extend([
-                    f"{contract.delta:.3f}" if contract.delta is not None else "",
-                    f"{contract.gamma:.3f}" if contract.gamma is not None else "",
-                    f"{contract.theta:.3f}" if contract.theta is not None else "",
-                    f"{contract.vega:.3f}" if contract.vega is not None else "",
-                    f"{contract.rho:.3f}" if contract.rho is not None else "",
-                ])
+            if any(
+                col[0] in ("Delta", "Gamma", "Theta", "Vega", "Rho") for col in columns
+            ):
+                row.extend(
+                    [
+                        f"{contract.delta:.3f}" if contract.delta is not None else "",
+                        f"{contract.gamma:.3f}" if contract.gamma is not None else "",
+                        f"{contract.theta:.3f}" if contract.theta is not None else "",
+                        f"{contract.vega:.3f}" if contract.vega is not None else "",
+                        f"{contract.rho:.3f}" if contract.rho is not None else "",
+                    ]
+                )
             table.add_row(*row)
             row_count += 1
 

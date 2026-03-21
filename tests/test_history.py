@@ -1,5 +1,4 @@
 import json
-import pytest
 from tenortui.history import load_history, save_history, add_to_history
 
 MAX_HISTORY = 10
