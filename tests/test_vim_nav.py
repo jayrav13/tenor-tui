@@ -3,7 +3,11 @@
 import pytest
 from textual.app import App, ComposeResult
 
+from tenortui.app import TenorTUI
+from tenortui.widgets.command_palette import CommandPalette
 from tenortui.widgets.help_overlay import HelpOverlay
+from tenortui.widgets.status_bar import StatusBar
+from tenortui.widgets.ticker_bar import TickerBar
 
 
 class HelpTestApp(App):
@@ -42,8 +46,6 @@ async def test_help_overlay_shows_keybindings():
 
 
 # --- Command Palette ---
-
-from tenortui.widgets.command_palette import CommandPalette
 
 
 @pytest.mark.asyncio
@@ -89,10 +91,6 @@ async def test_command_palette_submits_command():
 
 
 # --- App integration tests ---
-
-from tenortui.app import TenorTUI
-from tenortui.widgets.chain_table import ChainTable
-from tenortui.widgets.ticker_bar import TickerBar
 
 
 @pytest.mark.asyncio
@@ -189,8 +187,6 @@ async def test_r_triggers_refresh(fake_provider, monkeypatch):
 
 
 # --- Status Bar ---
-
-from tenortui.widgets.status_bar import StatusBar
 
 
 @pytest.mark.asyncio
