@@ -43,5 +43,5 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev]"
 
-      - name: Run tests
-        run: python -m pytest -v
+      - name: Run tests with coverage
+        run: python -m pytest -v --cov=tenortui --cov-report=term-missing --cov-fail-under=90
