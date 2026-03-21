@@ -12,7 +12,9 @@ from tenortui.history import load_history, add_to_history
 from tenortui.providers import PROVIDERS
 from tenortui.providers.yahoo import batch_quotes
 from tenortui.widgets.chain_table import ChainTable
+from tenortui.widgets.command_palette import CommandPalette
 from tenortui.widgets.expiry_selector import ExpirySelector
+from tenortui.widgets.help_overlay import HelpOverlay
 from tenortui.widgets.recently_viewed import RecentlyViewed
 from tenortui.widgets.status_bar import StatusBar
 from tenortui.widgets.ticker_bar import TickerBar
@@ -21,6 +23,7 @@ from tenortui.widgets.ticker_bar import TickerBar
 class TenorTUI(App):
     CSS_PATH = "styles/app.tcss"
     TITLE = "TenorTUI"
+    AUTO_FOCUS = None
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("slash", "focus_search", "Search"),
@@ -44,9 +47,9 @@ class TenorTUI(App):
             yield RecentlyViewed(symbols=self._history)
             yield ChainTable()
         yield StatusBar(provider_name=self._provider.name)
+        yield CommandPalette()
 
     def on_mount(self) -> None:
-        self.query_one(TickerBar).focus_input()
         chain_table = self.query_one(ChainTable)
         recently_viewed = self.query_one(RecentlyViewed)
         if self._history:
@@ -73,10 +76,114 @@ class TenorTUI(App):
         if self._current_symbol:
             self._load_ticker(self._current_symbol)
 
+    def action_help(self) -> None:
+        self.push_screen(HelpOverlay())
+
+    def action_command_palette(self) -> None:
+        self.query_one(CommandPalette).open()
+
+    def _focus_first_table(self) -> None:
+        """Focus the first (calls) DataTable so j/k navigation works immediately."""
+        from textual.widgets import DataTable
+
+        try:
+            tables = self.query_one(ChainTable).query(DataTable)
+            if tables:
+                tables.first().focus()
+        except Exception:
+            pass
+
+    def _input_has_focus(self) -> bool:
+        """Check if any text input widget has focus."""
+        focused = self.focused
+        if focused is None:
+            return False
+        from textual.widgets import Input
+
+        return isinstance(focused, Input)
+
+    def on_key(self, event) -> None:
+        """Handle vim-style navigation keys when no input is focused."""
+        if self._input_has_focus():
+            return
+
+        from textual.widgets import DataTable, ListView
+
+        key = event.key
+
+        if key == "question_mark":
+            self.action_help()
+            event.prevent_default()
+        elif key == "colon":
+            self.action_command_palette()
+            event.prevent_default()
+        elif key == "j":
+            if isinstance(self.focused, DataTable):
+                self.focused.action_cursor_down()
+                event.prevent_default()
+            elif isinstance(self.focused, ListView):
+                self.focused.action_cursor_down()
+                event.prevent_default()
+        elif key == "k":
+            if isinstance(self.focused, DataTable):
+                self.focused.action_cursor_up()
+                event.prevent_default()
+            elif isinstance(self.focused, ListView):
+                self.focused.action_cursor_up()
+                event.prevent_default()
+        elif key == "g":
+            if isinstance(self.focused, DataTable):
+                self.focused.move_cursor(row=0)
+                event.prevent_default()
+            elif isinstance(self.focused, ListView):
+                self.focused.index = 0
+                event.prevent_default()
+        elif key == "G":
+            if isinstance(self.focused, DataTable):
+                self.focused.move_cursor(row=self.focused.row_count - 1)
+                event.prevent_default()
+            elif isinstance(self.focused, ListView):
+                count = len(self.focused.children)
+                if count > 0:
+                    self.focused.index = count - 1
+                event.prevent_default()
+        elif key == "l":
+            self.action_focus_next()
+            event.prevent_default()
+        elif key == "h":
+            self.action_focus_previous()
+            event.prevent_default()
+        elif key == "r":
+            self.action_refresh()
+            event.prevent_default()
+
+    def on_command_palette_command_submitted(
+        self, event: CommandPalette.CommandSubmitted
+    ) -> None:
+        """Handle commands from the command palette."""
+        cmd = event.command.lower().strip()
+        if cmd in ("q", "quit"):
+            self.exit()
+        elif cmd == "help":
+            self.action_help()
+        elif cmd.startswith("search ") or cmd.startswith("s "):
+            parts = cmd.split(None, 1)
+            if len(parts) == 2:
+                symbol = parts[1].strip().upper()
+                self._current_symbol = symbol
+                self._load_ticker(symbol)
+
     @work(exclusive=True, group="recent")
     async def _fetch_recent_quotes(self) -> None:
         quotes = await asyncio.to_thread(batch_quotes, self._history)
-        self.query_one(RecentlyViewed).update_quotes(quotes)
+        rv = self.query_one(RecentlyViewed)
+        rv.update_quotes(quotes)
+        from textual.widgets import ListView
+
+        try:
+            rv.query_one(ListView).focus()
+        except Exception:
+            pass
 
     @work(exclusive=True, group="ticker")
     async def _load_ticker(self, symbol: str) -> None:
@@ -127,6 +234,7 @@ class TenorTUI(App):
         chain_table.loading = False
         self._loading_ticker = False
         self.query_one(StatusBar).update_refresh_time()
+        self._focus_first_table()
 
     @work(exclusive=True, group="chain")
     async def _load_chain(self, symbol: str, expiration: str) -> None:
@@ -144,6 +252,7 @@ class TenorTUI(App):
 
         chain_table.loading = False
         self.query_one(StatusBar).update_refresh_time()
+        self._focus_first_table()
 
 
 def _parse_args() -> argparse.Namespace:

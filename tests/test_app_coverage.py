@@ -85,6 +85,7 @@ async def test_load_ticker_symbol_not_found(monkeypatch):
     provider = ErrorProvider(error_type="symbol")
     app = TenorTUI(provider=provider)
     async with app.run_test() as pilot:
+        app.action_focus_search()
         await pilot.press(*"BADTICKER")
         await pilot.press("enter")
         await app.workers.wait_for_complete()
@@ -103,6 +104,7 @@ async def test_load_ticker_provider_error(monkeypatch):
     provider = ErrorProvider(error_type="provider")
     app = TenorTUI(provider=provider)
     async with app.run_test() as pilot:
+        app.action_focus_search()
         await pilot.press(*"AAPL")
         await pilot.press("enter")
         await app.workers.wait_for_complete()
@@ -121,6 +123,7 @@ async def test_load_ticker_no_expirations(sample_quote, monkeypatch):
     provider = NoExpirationsProvider(quote=sample_quote)
     app = TenorTUI(provider=provider)
     async with app.run_test() as pilot:
+        app.action_focus_search()
         await pilot.press(*"AAPL")
         await pilot.press("enter")
         await app.workers.wait_for_complete()
@@ -152,6 +155,7 @@ async def test_load_ticker_expirations_error(sample_quote, monkeypatch):
 
     app = TenorTUI(provider=ExpErrorProvider())
     async with app.run_test() as pilot:
+        app.action_focus_search()
         await pilot.press(*"AAPL")
         await pilot.press("enter")
         await app.workers.wait_for_complete()
@@ -172,6 +176,7 @@ async def test_load_chain_on_expiry_selection(fake_provider, sample_chain, monke
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         # Load a ticker first
+        app.action_focus_search()
         await pilot.press(*"AAPL")
         await pilot.press("enter")
         await app.workers.wait_for_complete()
@@ -190,6 +195,7 @@ async def test_load_chain_provider_error(sample_quote, sample_expirations, monke
     provider = ChainErrorProvider(quote=sample_quote, expirations=sample_expirations)
     app = TenorTUI(provider=provider)
     async with app.run_test() as pilot:
+        app.action_focus_search()
         await pilot.press(*"AAPL")
         await pilot.press("enter")
         await app.workers.wait_for_complete()
@@ -209,6 +215,7 @@ async def test_refresh_reloads_ticker(fake_provider, monkeypatch):
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         # Load ticker first
+        app.action_focus_search()
         await pilot.press(*"AAPL")
         await pilot.press("enter")
         await app.workers.wait_for_complete()
@@ -282,6 +289,7 @@ async def test_expiry_tab_triggers_independent_chain_load(fake_provider, monkeyp
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         # Load a ticker
+        app.action_focus_search()
         await pilot.press(*"AAPL")
         await pilot.press("enter")
         await app.workers.wait_for_complete()
@@ -326,6 +334,7 @@ async def test_chain_load_error_on_expiry_switch(
 
     app = TenorTUI(provider=SwitchErrorProvider())
     async with app.run_test() as pilot:
+        app.action_focus_search()
         await pilot.press(*"AAPL")
         await pilot.press("enter")
         await app.workers.wait_for_complete()
