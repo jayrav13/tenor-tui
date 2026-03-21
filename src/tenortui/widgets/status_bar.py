@@ -65,10 +65,7 @@ class StatusBar(Widget):
         with Horizontal():
             yield Static(self._provider_name, classes="status-provider")
             yield Static("", classes="status-market", id="status-market")
-            yield Static(
-                "? Help | / Search | r Refresh | ^P Pause | : Command | q Quit",
-                classes="status-keys",
-            )
+            yield Static("? Help", classes="status-keys")
             yield Static("", classes="status-refresh", id="status-refresh")
             yield Static(self._last_refresh, classes="status-time", id="status-time")
 
