@@ -21,6 +21,7 @@ KEYBINDINGS = [
         [
             ("/ or s", "Focus search bar"),
             ("r", "Refresh current data"),
+            ("Ctrl+P", "Pause / resume auto-refresh"),
             ("Enter", "Select / expand"),
             ("q", "Quit"),
         ],
