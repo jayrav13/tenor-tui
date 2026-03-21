@@ -43,7 +43,7 @@ pre-commit install && pre-commit install --hook-type pre-push
 
 ### What runs
 
-- **Pre-commit:** `ruff check` (lint) and `ruff format --check` (format) on staged Python files
+- **Pre-commit:** `ruff check --fix` (lint with auto-fix) and `ruff format` (format in-place) on staged Python files
 - **Pre-push:** `python -m pytest` (full test suite)
 
 ### Bypass
