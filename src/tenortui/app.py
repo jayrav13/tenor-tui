@@ -165,7 +165,14 @@ class TenorTUI(App):
     @work(exclusive=True, group="recent")
     async def _fetch_recent_quotes(self) -> None:
         quotes = await asyncio.to_thread(batch_quotes, self._history)
-        self.query_one(RecentlyViewed).update_quotes(quotes)
+        rv = self.query_one(RecentlyViewed)
+        rv.update_quotes(quotes)
+        from textual.widgets import ListView
+
+        try:
+            rv.query_one(ListView).focus()
+        except Exception:
+            pass
 
     @work(exclusive=True, group="ticker")
     async def _load_ticker(self, symbol: str) -> None:
