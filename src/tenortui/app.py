@@ -23,6 +23,7 @@ from tenortui.widgets.ticker_bar import TickerBar
 class TenorTUI(App):
     CSS_PATH = "styles/app.tcss"
     TITLE = "TenorTUI"
+    AUTO_FOCUS = None
     BINDINGS = [
         ("q", "quit", "Quit"),
         ("slash", "focus_search", "Search"),
@@ -49,7 +50,6 @@ class TenorTUI(App):
         yield CommandPalette()
 
     def on_mount(self) -> None:
-        self.set_focus(None)
         chain_table = self.query_one(ChainTable)
         recently_viewed = self.query_one(RecentlyViewed)
         if self._history:

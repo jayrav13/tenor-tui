@@ -21,6 +21,7 @@ async def test_app_launches(app):
 @pytest.mark.asyncio
 async def test_search_ticker(app):
     async with app.run_test() as pilot:
+        app.action_focus_search()
         await pilot.press(*"AAPL")
         await pilot.press("enter")
         await app.workers.wait_for_complete()
@@ -71,6 +72,7 @@ async def test_recently_viewed_hidden_after_ticker_load(fake_provider, monkeypat
     monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: ["AAPL"])
     test_app = TenorTUI(provider=fake_provider)
     async with test_app.run_test() as pilot:
+        test_app.action_focus_search()
         await pilot.press(*"AAPL")
         await pilot.press("enter")
         await test_app.workers.wait_for_complete()

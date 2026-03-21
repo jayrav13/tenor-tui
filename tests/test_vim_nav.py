@@ -123,8 +123,9 @@ async def test_vim_keys_ignored_when_input_focused(fake_provider, monkeypatch):
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         # Focus search first (input no longer focused on launch)
+        app.action_focus_search()
+        await pilot.pause()
         input_w = app.query_one(TickerBar).query_one("#ticker-input")
-        input_w.focus()
         assert input_w.has_focus
         await pilot.press("j")
         assert input_w.value == "j"
@@ -137,6 +138,7 @@ async def test_j_k_navigation_in_chain_table(fake_provider, monkeypatch):
     monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
+        app.action_focus_search()
         await pilot.press(*"AAPL")
         await pilot.press("enter")
         await app.workers.wait_for_complete()
@@ -176,6 +178,7 @@ async def test_r_triggers_refresh(fake_provider, monkeypatch):
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         # Load ticker first
+        app.action_focus_search()
         await pilot.press(*"AAPL")
         await pilot.press("enter")
         await app.workers.wait_for_complete()
