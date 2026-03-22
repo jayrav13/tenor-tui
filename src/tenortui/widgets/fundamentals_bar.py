@@ -8,9 +8,13 @@ class FundamentalsBar(Widget):
     DEFAULT_CSS = """
     FundamentalsBar {
         dock: top;
-        height: 1;
+        height: auto;
+        max-height: 1;
         background: $surface;
         padding: 0 1;
+    }
+    FundamentalsBar.hidden {
+        display: none;
     }
     FundamentalsBar #fundamentals-display {
         width: 1fr;
@@ -20,7 +24,7 @@ class FundamentalsBar(Widget):
 
     def __init__(self) -> None:
         super().__init__()
-        self.display = False
+        self.add_class("hidden")
 
     def compose(self):
         yield Static("", id="fundamentals-display")
@@ -41,11 +45,11 @@ class FundamentalsBar(Widget):
             parts.append(f"200d: ${quote.moving_avg_200d:.2f}")
 
         if not parts:
-            self.display = False
+            self.add_class("hidden")
             return
 
         self.query_one("#fundamentals-display").update(" | ".join(parts))
-        self.display = True
+        self.remove_class("hidden")
 
     def hide(self) -> None:
-        self.display = False
+        self.add_class("hidden")

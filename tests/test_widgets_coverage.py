@@ -185,7 +185,7 @@ async def test_fundamentals_bar_displays_metrics(sample_quote_with_fundamentals)
     app = WidgetTestApp(widget)
     async with app.run_test():
         widget.show_fundamentals(sample_quote_with_fundamentals)
-        assert widget.display is True
+        assert not widget.has_class("hidden")
         rendered = widget.query_one("#fundamentals-display").render().plain
         assert "P/E: 31.35" in rendered
         assert "EPS: $7.91" in rendered
@@ -213,7 +213,7 @@ async def test_fundamentals_bar_omits_none_fields():
     app = WidgetTestApp(widget)
     async with app.run_test():
         widget.show_fundamentals(quote)
-        assert widget.display is True
+        assert not widget.has_class("hidden")
         rendered = widget.query_one("#fundamentals-display").render().plain
         assert "P/E: 25.00" in rendered
         assert "EPS: $4.00" in rendered
@@ -239,7 +239,7 @@ async def test_fundamentals_bar_hidden_when_all_none():
     app = WidgetTestApp(widget)
     async with app.run_test():
         widget.show_fundamentals(quote)
-        assert widget.display is False
+        assert widget.has_class("hidden")
 
 
 # --- TickerBar ---
