@@ -10,6 +10,7 @@ Pure Python — no external dependencies.
 """
 
 import math
+from datetime import date
 
 
 def calculate_intrinsic(spot: float, strike: float, option_type: str) -> dict:
@@ -231,3 +232,72 @@ def calculate_american(
         "price": round(price, 6),
         "model": "american",
     }
+
+
+def calculate_greeks(
+    spot: float,
+    strike: float,
+    T: float,
+    r: float,
+    sigma: float,
+    q: float,
+    option_type: str,
+) -> dict:
+    """Calculate Greeks using three-tier fallback. Never raises."""
+    try:
+        if T <= 0 or sigma <= 0:
+            return calculate_intrinsic(spot, strike, option_type)
+
+        # Tier 1: CRR Binomial American
+        try:
+            return calculate_american(spot, strike, T, r, sigma, q, option_type)
+        except Exception:
+            pass
+
+        # Tier 2: Black-Scholes European
+        try:
+            return calculate_european(spot, strike, T, r, sigma, q, option_type)
+        except Exception:
+            pass
+
+        # Tier 3: Intrinsic value
+        return calculate_intrinsic(spot, strike, option_type)
+
+    except Exception:
+        return calculate_intrinsic(spot, strike, option_type)
+
+
+def calculate_chain_greeks(
+    chain,
+    spot: float,
+    expiration: str,
+    risk_free_rate: float,
+    dividend_yield: float | None,
+) -> None:
+    """Populate Greeks on all contracts in the chain. Mutates in place."""
+    q = dividend_yield if dividend_yield is not None else 0.0
+    exp_date = date.fromisoformat(expiration)
+    T = (exp_date - date.today()).days / 365.0
+
+    for contract in chain.calls + chain.puts:
+        sigma = (
+            contract.implied_volatility
+            if contract.implied_volatility is not None
+            else 0.0
+        )
+        result = calculate_greeks(
+            spot=spot,
+            strike=contract.strike,
+            T=T,
+            r=risk_free_rate,
+            sigma=sigma,
+            q=q,
+            option_type=contract.option_type,
+        )
+        contract.delta = result["delta"]
+        contract.gamma = result["gamma"]
+        contract.theta = result["theta"]
+        contract.vega = result["vega"]
+        contract.rho = result["rho"]
+
+    chain.greeks_calculated = True

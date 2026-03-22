@@ -1,4 +1,11 @@
-from tenortui.greeks import calculate_american, calculate_european, calculate_intrinsic
+from tenortui.greeks import (
+    calculate_american,
+    calculate_chain_greeks,
+    calculate_european,
+    calculate_greeks,
+    calculate_intrinsic,
+)
+from tenortui.models import OptionContract, OptionsChain
 
 
 class TestIntrinsicTier:
@@ -244,3 +251,170 @@ class TestAmericanTier:
         )
         assert result["model"] == "american"
         assert result["delta"] > 0
+
+
+class TestFallbackRouting:
+    def test_zero_iv_routes_to_intrinsic(self):
+        result = calculate_greeks(
+            spot=100.0,
+            strike=90.0,
+            T=1.0,
+            r=0.05,
+            sigma=0.0,
+            q=0.0,
+            option_type="call",
+        )
+        assert result["model"] == "intrinsic"
+
+    def test_negative_iv_routes_to_intrinsic(self):
+        result = calculate_greeks(
+            spot=100.0,
+            strike=90.0,
+            T=1.0,
+            r=0.05,
+            sigma=-0.1,
+            q=0.0,
+            option_type="call",
+        )
+        assert result["model"] == "intrinsic"
+
+    def test_zero_time_routes_to_intrinsic(self):
+        result = calculate_greeks(
+            spot=100.0,
+            strike=90.0,
+            T=0.0,
+            r=0.05,
+            sigma=0.20,
+            q=0.0,
+            option_type="call",
+        )
+        assert result["model"] == "intrinsic"
+
+    def test_negative_time_routes_to_intrinsic(self):
+        result = calculate_greeks(
+            spot=100.0,
+            strike=90.0,
+            T=-1.0,
+            r=0.05,
+            sigma=0.20,
+            q=0.0,
+            option_type="call",
+        )
+        assert result["model"] == "intrinsic"
+
+    def test_normal_inputs_use_american(self):
+        result = calculate_greeks(
+            spot=100.0,
+            strike=100.0,
+            T=1.0,
+            r=0.05,
+            sigma=0.20,
+            q=0.0,
+            option_type="call",
+        )
+        assert result["model"] == "american"
+
+    def test_never_raises(self):
+        """Even with absurd inputs, should return a result."""
+        result = calculate_greeks(
+            spot=0.0,
+            strike=0.0,
+            T=1.0,
+            r=0.05,
+            sigma=0.20,
+            q=0.0,
+            option_type="call",
+        )
+        assert "delta" in result
+
+
+class TestCalculateChainGreeks:
+    def _make_contract(self, strike, option_type="call", iv=0.30):
+        return OptionContract(
+            contract_symbol=f"TEST{strike}{option_type[0].upper()}",
+            option_type=option_type,
+            strike=strike,
+            bid=5.0,
+            ask=5.50,
+            last_price=5.25,
+            volume=100,
+            open_interest=500,
+            implied_volatility=iv,
+            delta=None,
+            gamma=None,
+            theta=None,
+            vega=None,
+            rho=None,
+        )
+
+    def test_populates_greeks_on_all_contracts(self):
+        chain = OptionsChain(
+            symbol="TEST",
+            expiration="2027-03-21",
+            calls=[self._make_contract(100.0), self._make_contract(110.0)],
+            puts=[self._make_contract(100.0, "put"), self._make_contract(110.0, "put")],
+        )
+        calculate_chain_greeks(
+            chain=chain,
+            spot=105.0,
+            expiration="2027-03-21",
+            risk_free_rate=0.05,
+            dividend_yield=0.0,
+        )
+        assert chain.greeks_calculated is True
+        for contract in chain.calls + chain.puts:
+            assert contract.delta is not None
+            assert contract.gamma is not None
+            assert contract.theta is not None
+            assert contract.vega is not None
+            assert contract.rho is not None
+
+    def test_call_deltas_positive_put_deltas_negative(self):
+        chain = OptionsChain(
+            symbol="TEST",
+            expiration="2027-03-21",
+            calls=[self._make_contract(100.0)],
+            puts=[self._make_contract(100.0, "put")],
+        )
+        calculate_chain_greeks(
+            chain=chain,
+            spot=105.0,
+            expiration="2027-03-21",
+            risk_free_rate=0.05,
+            dividend_yield=0.0,
+        )
+        assert chain.calls[0].delta > 0
+        assert chain.puts[0].delta < 0
+
+    def test_none_dividend_yield_treated_as_zero(self):
+        chain = OptionsChain(
+            symbol="TEST",
+            expiration="2027-03-21",
+            calls=[self._make_contract(100.0)],
+            puts=[],
+        )
+        calculate_chain_greeks(
+            chain=chain,
+            spot=105.0,
+            expiration="2027-03-21",
+            risk_free_rate=0.05,
+            dividend_yield=None,
+        )
+        assert chain.calls[0].delta is not None
+
+    def test_expired_chain_uses_intrinsic(self):
+        chain = OptionsChain(
+            symbol="TEST",
+            expiration="2020-01-01",
+            calls=[self._make_contract(100.0)],
+            puts=[],
+        )
+        calculate_chain_greeks(
+            chain=chain,
+            spot=105.0,
+            expiration="2020-01-01",
+            risk_free_rate=0.05,
+            dividend_yield=0.0,
+        )
+        assert chain.greeks_calculated is True
+        assert chain.calls[0].delta == 1.0  # ITM call intrinsic
