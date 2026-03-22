@@ -14,6 +14,7 @@ from tenortui.market_hours import MarketState, get_market_state
 from tenortui.providers import PROVIDERS
 from tenortui.providers.yahoo import batch_quotes
 from tenortui.widgets.chain_table import ChainTable
+from tenortui.widgets.fundamentals_bar import FundamentalsBar
 from tenortui.widgets.command_palette import CommandPalette
 from tenortui.widgets.expiry_selector import ExpirySelector
 from tenortui.widgets.help_overlay import HelpOverlay
@@ -53,6 +54,7 @@ class TenorTUI(App):
 
     def compose(self) -> ComposeResult:
         yield TickerBar()
+        yield FundamentalsBar()
         with Vertical(id="main-content"):
             yield ExpirySelector()
             yield RecentlyViewed(symbols=self._history)
@@ -267,6 +269,7 @@ class TenorTUI(App):
 
         chain_table.loading = True
         self._loading_ticker = True
+        self.query_one(FundamentalsBar).hide()
 
         recently_viewed = self.query_one(RecentlyViewed)
         recently_viewed.display = False
@@ -276,6 +279,7 @@ class TenorTUI(App):
             quote = await asyncio.to_thread(self._provider.get_quote, symbol)
             self._current_price = quote.price
             ticker_bar.show_quote(quote)
+            self.query_one(FundamentalsBar).show_fundamentals(quote)
             self._history = add_to_history(symbol)
         except SymbolNotFoundError:
             ticker_bar.show_error(f"Symbol '{symbol}' not found")
