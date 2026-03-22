@@ -74,7 +74,23 @@ class HelpOverlay(ModalScreen):
     BINDINGS = [
         Binding("escape", "dismiss", "Close", show=False),
         Binding("question_mark", "dismiss", "Close", show=False),
+        Binding("j", "scroll_down", "Scroll down", show=False),
+        Binding("k", "scroll_up", "Scroll up", show=False),
+        Binding("g", "scroll_top", "Scroll to top", show=False),
+        Binding("G", "scroll_bottom", "Scroll to bottom", show=False),
     ]
+
+    def action_scroll_down(self) -> None:
+        self.query_one("#help-container").scroll_relative(y=1)
+
+    def action_scroll_up(self) -> None:
+        self.query_one("#help-container").scroll_relative(y=-1)
+
+    def action_scroll_top(self) -> None:
+        self.query_one("#help-container").scroll_home()
+
+    def action_scroll_bottom(self) -> None:
+        self.query_one("#help-container").scroll_end()
 
     def compose(self) -> ComposeResult:
         with VerticalScroll(id="help-container"):
