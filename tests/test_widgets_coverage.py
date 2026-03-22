@@ -7,6 +7,7 @@ from textual.app import App, ComposeResult
 from tenortui.config import SpreadThresholds
 from tenortui.models import OptionContract, OptionsChain, Quote
 from tenortui.widgets.chain_table import ChainTable
+from tenortui.widgets.fundamentals_bar import FundamentalsBar
 from tenortui.widgets.expiry_selector import ExpirySelector
 from tenortui.widgets.recently_viewed import RecentlyViewed
 from tenortui.widgets.status_bar import StatusBar
@@ -172,6 +173,73 @@ async def test_chain_table_spread_color_classification():
     # Boundary: exactly at moderate threshold => wide (red)
     spread_text = widget._format_spread(15.0, thresholds)
     assert spread_text.style == "red"
+
+
+# --- FundamentalsBar ---
+
+
+@pytest.mark.asyncio
+async def test_fundamentals_bar_displays_metrics(sample_quote_with_fundamentals):
+    """FundamentalsBar shows formatted metrics."""
+    widget = FundamentalsBar()
+    app = WidgetTestApp(widget)
+    async with app.run_test():
+        widget.show_fundamentals(sample_quote_with_fundamentals)
+        assert widget.display is True
+        rendered = widget.query_one("#fundamentals-display").render().plain
+        assert "P/E: 31.35" in rendered
+        assert "EPS: $7.91" in rendered
+        assert "Div: 0.42%" in rendered
+        assert "Feb 13" in rendered
+        assert "50d: $261.13" in rendered
+        assert "200d: $246.82" in rendered
+
+
+@pytest.mark.asyncio
+async def test_fundamentals_bar_omits_none_fields():
+    """FundamentalsBar omits metrics with None values."""
+    quote = Quote(
+        symbol="TEST",
+        name="Test Corp.",
+        price=100.0,
+        change=0.0,
+        change_percent=0.0,
+        volume=1000,
+        market_cap=None,
+        pe_ratio=25.0,
+        eps=4.0,
+    )
+    widget = FundamentalsBar()
+    app = WidgetTestApp(widget)
+    async with app.run_test():
+        widget.show_fundamentals(quote)
+        assert widget.display is True
+        rendered = widget.query_one("#fundamentals-display").render().plain
+        assert "P/E: 25.00" in rendered
+        assert "EPS: $4.00" in rendered
+        assert "Div:" not in rendered
+        assert "Earnings:" not in rendered
+        assert "50d:" not in rendered
+        assert "200d:" not in rendered
+
+
+@pytest.mark.asyncio
+async def test_fundamentals_bar_hidden_when_all_none():
+    """FundamentalsBar stays hidden when all fundamentals are None."""
+    quote = Quote(
+        symbol="TEST",
+        name="Test Corp.",
+        price=100.0,
+        change=0.0,
+        change_percent=0.0,
+        volume=1000,
+        market_cap=None,
+    )
+    widget = FundamentalsBar()
+    app = WidgetTestApp(widget)
+    async with app.run_test():
+        widget.show_fundamentals(quote)
+        assert widget.display is False
 
 
 # --- TickerBar ---
