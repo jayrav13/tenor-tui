@@ -111,6 +111,27 @@ class YahooProvider:
         )
 
 
+def fetch_fundamentals(quote: Quote) -> Quote:
+    """Enrich a Quote with fundamental data from Yahoo Finance.
+
+    Always uses Yahoo regardless of which provider supplied the quote.
+    Returns the same quote with fundamental fields populated.
+    """
+    try:
+        ticker = yf.Ticker(quote.symbol)
+        info = ticker.info
+    except Exception:
+        return quote
+
+    quote.pe_ratio = _safe_float_or_none(info.get("trailingPE"))
+    quote.eps = _safe_float_or_none(info.get("trailingEps"))
+    quote.dividend_yield = _safe_float_or_none(info.get("dividendYield"))
+    quote.earnings_date = _format_earnings_date(info.get("earningsTimestamp"))
+    quote.moving_avg_50d = _safe_float_or_none(info.get("fiftyDayAverage"))
+    quote.moving_avg_200d = _safe_float_or_none(info.get("twoHundredDayAverage"))
+    return quote
+
+
 def batch_quotes(symbols: list[str]) -> list[Quote]:
     if not symbols:
         return []

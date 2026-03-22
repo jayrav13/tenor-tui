@@ -12,7 +12,7 @@ from tenortui.exceptions import ConfigError, ProviderError, SymbolNotFoundError
 from tenortui.history import load_history, add_to_history
 from tenortui.market_hours import MarketState, get_market_state
 from tenortui.providers import PROVIDERS
-from tenortui.providers.yahoo import batch_quotes
+from tenortui.providers.yahoo import batch_quotes, fetch_fundamentals
 from tenortui.widgets.chain_table import ChainTable
 from tenortui.widgets.fundamentals_bar import FundamentalsBar
 from tenortui.widgets.command_palette import CommandPalette
@@ -279,6 +279,7 @@ class TenorTUI(App):
             quote = await asyncio.to_thread(self._provider.get_quote, symbol)
             self._current_price = quote.price
             ticker_bar.show_quote(quote)
+            quote = await asyncio.to_thread(fetch_fundamentals, quote)
             self.query_one(FundamentalsBar).show_fundamentals(quote)
             self._history = add_to_history(symbol)
         except SymbolNotFoundError:
