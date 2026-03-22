@@ -387,7 +387,6 @@ class TenorTUI(App):
 
         chain_table.loading = False
         self.query_one(StatusBar).update_refresh_time()
-        self._focus_first_table()
 
 
 def _parse_args() -> argparse.Namespace:
