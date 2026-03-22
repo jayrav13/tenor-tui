@@ -27,6 +27,46 @@ class TestQuote:
         )
         assert q.market_cap is None
 
+    def test_quote_fundamentals_default_none(self):
+        q = Quote(
+            symbol="AAPL",
+            name="Apple Inc.",
+            price=213.25,
+            change=1.42,
+            change_percent=0.67,
+            volume=54_200_000,
+            market_cap=3_200_000_000_000,
+        )
+        assert q.pe_ratio is None
+        assert q.eps is None
+        assert q.dividend_yield is None
+        assert q.earnings_date is None
+        assert q.moving_avg_50d is None
+        assert q.moving_avg_200d is None
+
+    def test_quote_with_fundamentals(self):
+        q = Quote(
+            symbol="AAPL",
+            name="Apple Inc.",
+            price=213.25,
+            change=1.42,
+            change_percent=0.67,
+            volume=54_200_000,
+            market_cap=3_200_000_000_000,
+            pe_ratio=28.5,
+            eps=6.42,
+            dividend_yield=0.42,
+            earnings_date="Feb 13",
+            moving_avg_50d=261.13,
+            moving_avg_200d=246.82,
+        )
+        assert q.pe_ratio == 28.5
+        assert q.eps == 6.42
+        assert q.dividend_yield == 0.42
+        assert q.earnings_date == "Feb 13"
+        assert q.moving_avg_50d == 261.13
+        assert q.moving_avg_200d == 246.82
+
 
 class TestOptionContract:
     def test_mid_property(self):
