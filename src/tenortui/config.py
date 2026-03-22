@@ -34,10 +34,30 @@ class SpreadThresholds:
 
 
 @dataclass
+class GreeksConfig:
+    enabled: bool = False
+    risk_free_rate: float = 0.05
+
+
+@dataclass
 class AppConfig:
     provider_name: str
     provider_config: dict = field(default_factory=dict)
     spread_thresholds: SpreadThresholds = field(default_factory=SpreadThresholds)
+    greeks: GreeksConfig = field(default_factory=GreeksConfig)
+
+
+def _parse_greeks_config(provider_name: str, provider_config: dict) -> GreeksConfig:
+    """Parse greeks config from provider section. Only applies to Yahoo."""
+    if provider_name != "yahoo":
+        return GreeksConfig()
+    section = provider_config.get("greeks")
+    if not isinstance(section, dict):
+        return GreeksConfig()
+    return GreeksConfig(
+        enabled=bool(section.get("enabled", False)),
+        risk_free_rate=float(section.get("risk_free_rate", 0.05)),
+    )
 
 
 def _parse_spread_thresholds(raw: dict) -> SpreadThresholds:
@@ -74,6 +94,7 @@ def load_config(
             provider_name=provider_name,
             provider_config=provider_config,
             spread_thresholds=spread_thresholds,
+            greeks=_parse_greeks_config(provider_name, provider_config),
         )
 
     if "default" in raw:
@@ -100,6 +121,7 @@ def load_config(
         provider_name=provider_name,
         provider_config=provider_config,
         spread_thresholds=spread_thresholds,
+        greeks=_parse_greeks_config(provider_name, provider_config),
     )
 
 
