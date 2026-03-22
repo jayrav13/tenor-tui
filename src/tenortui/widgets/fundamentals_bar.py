@@ -7,9 +7,7 @@ from tenortui.models import Quote
 class FundamentalsBar(Widget):
     DEFAULT_CSS = """
     FundamentalsBar {
-        dock: top;
-        height: auto;
-        max-height: 1;
+        height: 1;
         background: $surface;
         padding: 0 1;
     }

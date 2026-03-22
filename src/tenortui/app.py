@@ -54,8 +54,8 @@ class TenorTUI(App):
 
     def compose(self) -> ComposeResult:
         yield TickerBar()
-        yield FundamentalsBar()
         with Vertical(id="main-content"):
+            yield FundamentalsBar()
             yield ExpirySelector()
             yield RecentlyViewed(symbols=self._history)
             yield ChainTable()
