@@ -13,6 +13,7 @@ from tenortui.history import load_history, add_to_history
 from tenortui.market_hours import MarketState, get_market_state
 from tenortui.providers import PROVIDERS
 from tenortui.providers.yahoo import batch_quotes, fetch_fundamentals
+from tenortui.risk_free_rate import get_risk_free_rate
 from tenortui.widgets.chain_table import ChainTable
 from tenortui.widgets.fundamentals_bar import FundamentalsBar
 from tenortui.widgets.command_palette import CommandPalette
@@ -58,6 +59,9 @@ class TenorTUI(App):
         self._auto_refresh_countdown: int = 0
         self._refresh_timer = None
         self._countdown_timer = None
+        rate, is_live = get_risk_free_rate(fallback=self._greeks_config.risk_free_rate)
+        self._risk_free_rate = rate
+        self._risk_free_rate_is_live = is_live
 
     def compose(self) -> ComposeResult:
         yield TickerBar()
@@ -78,6 +82,9 @@ class TenorTUI(App):
         else:
             recently_viewed.display = False
         self._update_market_display()
+        self.query_one(StatusBar).update_rate_display(
+            self._risk_free_rate, self._risk_free_rate_is_live
+        )
         # Update market state display every 60s
         self.set_interval(60, self._update_market_display)
 
@@ -322,7 +329,7 @@ class TenorTUI(App):
                         chain=chain,
                         spot=self._current_price,
                         expiration=expirations[0],
-                        risk_free_rate=self._greeks_config.risk_free_rate,
+                        risk_free_rate=self._risk_free_rate,
                         dividend_yield=self._current_dividend_yield,
                     )
                 await chain_table.display_chain(
@@ -360,7 +367,7 @@ class TenorTUI(App):
                     chain=chain,
                     spot=self._current_price,
                     expiration=expiration,
-                    risk_free_rate=self._greeks_config.risk_free_rate,
+                    risk_free_rate=self._risk_free_rate,
                     dividend_yield=self._current_dividend_yield,
                 )
             await chain_table.display_chain(

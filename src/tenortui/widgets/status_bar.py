@@ -45,6 +45,16 @@ class StatusBar(Widget):
         width: 1fr;
         padding: 0 1;
     }
+    StatusBar .status-rate-live {
+        width: auto;
+        padding: 0 1;
+        color: $success;
+    }
+    StatusBar .status-rate-config {
+        width: auto;
+        padding: 0 1;
+        color: $warning;
+    }
     StatusBar .status-refresh {
         width: auto;
         padding: 0 1;
@@ -65,6 +75,7 @@ class StatusBar(Widget):
         with Horizontal():
             yield Static(self._provider_name, classes="status-provider")
             yield Static("", classes="status-market", id="status-market")
+            yield Static("", classes="status-rate-live", id="status-rate")
             yield Static("? Help", classes="status-keys")
             yield Static("", classes="status-refresh", id="status-refresh")
             yield Static(self._last_refresh, classes="status-time", id="status-time")
@@ -121,6 +132,21 @@ class StatusBar(Widget):
                 widget.update(f"↻ {seconds_until}s")
             else:
                 widget.update("")
+        except Exception:
+            pass
+
+    def update_rate_display(self, rate: float, is_live: bool) -> None:
+        try:
+            widget = self.query_one("#status-rate", Static)
+            pct = f"{rate * 100:.2f}%"
+            if is_live:
+                widget.update(f"RF: {pct} (live)")
+                widget.remove_class("status-rate-config")
+                widget.add_class("status-rate-live")
+            else:
+                widget.update(f"RF: {pct} (config)")
+                widget.remove_class("status-rate-live")
+                widget.add_class("status-rate-config")
         except Exception:
             pass
 
