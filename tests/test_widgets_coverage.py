@@ -175,6 +175,54 @@ async def test_chain_table_spread_color_classification():
     assert spread_text.style == "red"
 
 
+@pytest.mark.asyncio
+async def test_chain_table_calculated_greeks_starred_headers():
+    """When greeks_calculated is True, Greek column headers should have * suffix."""
+    chain = OptionsChain(
+        symbol="AAPL",
+        expiration="2026-03-21",
+        calls=[_make_contract(200.0, with_greeks=True)],
+        puts=[_make_contract(200.0, "put", with_greeks=True)],
+        greeks_calculated=True,
+    )
+    widget = ChainTable()
+    app = WidgetTestApp(widget)
+    async with app.run_test():
+        await widget.display_chain(chain, current_price=205.0)
+        from textual.widgets import DataTable
+
+        tables = widget.query(DataTable)
+        for table in tables:
+            col_labels = [str(col.label) for col in table.columns.values()]
+            greek_labels = [c for c in col_labels if "Delta" in c]
+            assert len(greek_labels) > 0
+            assert all("*" in c for c in greek_labels)
+
+
+@pytest.mark.asyncio
+async def test_chain_table_provider_greeks_no_star():
+    """When greeks_calculated is False, Greek column headers have no * suffix."""
+    chain = OptionsChain(
+        symbol="AAPL",
+        expiration="2026-03-21",
+        calls=[_make_contract(200.0, with_greeks=True)],
+        puts=[_make_contract(200.0, "put", with_greeks=True)],
+        greeks_calculated=False,
+    )
+    widget = ChainTable()
+    app = WidgetTestApp(widget)
+    async with app.run_test():
+        await widget.display_chain(chain, current_price=205.0)
+        from textual.widgets import DataTable
+
+        tables = widget.query(DataTable)
+        for table in tables:
+            col_labels = [str(col.label) for col in table.columns.values()]
+            greek_labels = [c for c in col_labels if "Delta" in c]
+            assert len(greek_labels) > 0
+            assert not any("*" in c for c in greek_labels)
+
+
 # --- FundamentalsBar ---
 
 

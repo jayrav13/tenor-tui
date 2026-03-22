@@ -74,7 +74,17 @@ class ChainTable(Widget):
         spread_thresholds: SpreadThresholds | None = None,
     ) -> None:
         show_greeks = any(c.has_greeks for c in chain.calls + chain.puts)
-        columns = BASE_COLUMNS + (GREEK_COLUMNS if show_greeks else [])
+        if show_greeks and chain.greeks_calculated:
+            greek_cols = [
+                ("Delta*", 8),
+                ("Gamma*", 8),
+                ("Theta*", 8),
+                ("Vega*", 8),
+                ("Rho*", 8),
+            ]
+        else:
+            greek_cols = GREEK_COLUMNS
+        columns = BASE_COLUMNS + (greek_cols if show_greeks else [])
         thresholds = spread_thresholds or DEFAULT_SPREAD_THRESHOLDS
 
         container = self.query_one(VerticalScroll)
@@ -118,7 +128,7 @@ class ChainTable(Widget):
     ) -> int | None:
         """Populate table and return the ATM row index (or None)."""
         for col_name, _width in columns:
-            table.add_column(col_name, key=col_name.lower())
+            table.add_column(col_name, key=col_name.lower().rstrip("*"))
 
         atm_row_idx = None
         atm_inserted = False
@@ -143,7 +153,8 @@ class ChainTable(Widget):
                 f"{contract.implied_volatility:.2%}",
             ]
             if any(
-                col[0] in ("Delta", "Gamma", "Theta", "Vega", "Rho") for col in columns
+                col[0].rstrip("*") in ("Delta", "Gamma", "Theta", "Vega", "Rho")
+                for col in columns
             ):
                 row.extend(
                     [
