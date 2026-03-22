@@ -125,6 +125,140 @@ def load_config(
     )
 
 
+@dataclass
+class ConfigOption:
+    key: str
+    type_name: str
+    default: str
+    description: str
+    condition: str = ""
+
+
+CONFIG_OPTIONS: list[ConfigOption] = [
+    ConfigOption(
+        key="default",
+        type_name="str",
+        default="yahoo",
+        description="Default data provider. Options: yahoo, tradier.",
+    ),
+    ConfigOption(
+        key="yahoo.greeks.enabled",
+        type_name="bool",
+        default="false",
+        description="Enable client-side Greeks calculation using Black-Scholes/Binomial models.",
+        condition="Only when provider is yahoo.",
+    ),
+    ConfigOption(
+        key="yahoo.greeks.risk_free_rate",
+        type_name="float",
+        default="0.05",
+        description="Risk-free interest rate for Greeks calculation (decimal, e.g. 0.05 = 5%). Used as fallback when live FRED rate is unavailable.",
+        condition="Only when yahoo.greeks.enabled is true.",
+    ),
+    ConfigOption(
+        key="tradier.api_key",
+        type_name="str",
+        default="required",
+        description="Tradier API key for authentication.",
+        condition="Required when provider is tradier.",
+    ),
+    ConfigOption(
+        key="tradier.sandbox",
+        type_name="bool",
+        default="false",
+        description="Use Tradier sandbox API endpoint instead of production.",
+        condition="Only when provider is tradier.",
+    ),
+    ConfigOption(
+        key="spread_thresholds.tight",
+        type_name="float",
+        default="5.0",
+        description="Bid-ask spread percentage threshold for tight spread highlighting (green).",
+    ),
+    ConfigOption(
+        key="spread_thresholds.moderate",
+        type_name="float",
+        default="15.0",
+        description="Bid-ask spread percentage threshold for moderate spread highlighting (yellow). Spreads above this are red.",
+    ),
+]
+
+
+def print_config_help(config_path: Path | None = None) -> None:
+    if config_path is None:
+        config_path = resolve_config_path()
+    exists = config_path.exists()
+
+    lines = [
+        "TenorTUI Configuration Help",
+        "=" * 28,
+        "",
+        "Config file: ~/.config/tenor/config.yaml",
+    ]
+    if exists:
+        lines.append(f"Active config: {config_path} (exists)")
+    else:
+        lines.append(f"Active config: {config_path} (not found, using defaults)")
+    lines.append("")
+    lines.append("Options:")
+    lines.append("-" * 8)
+    lines.append("")
+
+    # Group options by prefix for indented display
+    current_section: list[str] = []
+    for opt in CONFIG_OPTIONS:
+        parts = opt.key.split(".")
+        if len(parts) == 1:
+            # Top-level option
+            current_section = []
+            default_str = (
+                f'default: "{opt.default}"'
+                if opt.type_name == "str"
+                else f"default: {opt.default}"
+            )
+            lines.append(f"{opt.key} ({opt.type_name}, {default_str})")
+            lines.append(f"  {opt.description}")
+            if opt.condition:
+                lines.append(f"  {opt.condition}")
+            lines.append("")
+        else:
+            # Nested option — show section headers as needed
+            section_parts = parts[:-1]
+            leaf = parts[-1]
+            indent = ""
+            for i, section in enumerate(section_parts):
+                if i >= len(current_section) or current_section[i] != section:
+                    indent = "  " * i
+                    lines.append(f"{indent}{section}:")
+                    current_section = section_parts[: i + 1]
+            indent = "  " * len(section_parts)
+            default_str = (
+                f'default: "{opt.default}"'
+                if opt.type_name == "str"
+                else f"default: {opt.default}"
+            )
+            if opt.default == "required":
+                default_str = "required"
+            lines.append(f"{indent}{leaf} ({opt.type_name}, {default_str})")
+            lines.append(f"{indent}  {opt.description}")
+            if opt.condition:
+                lines.append(f"{indent}  {opt.condition}")
+            lines.append("")
+
+    lines.append("Example config:")
+    lines.append("-" * 15)
+    lines.append("default: yahoo")
+    lines.append("yahoo:")
+    lines.append("  greeks:")
+    lines.append("    enabled: true")
+    lines.append("    risk_free_rate: 0.04")
+    lines.append("spread_thresholds:")
+    lines.append("  tight: 3.0")
+    lines.append("  moderate: 10.0")
+
+    print("\n".join(lines))
+
+
 def _read_config_file(path: Path) -> dict:
     if not path.exists():
         return {}
