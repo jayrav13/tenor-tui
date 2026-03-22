@@ -45,6 +45,7 @@ class AppConfig:
     provider_config: dict = field(default_factory=dict)
     spread_thresholds: SpreadThresholds = field(default_factory=SpreadThresholds)
     greeks: GreeksConfig = field(default_factory=GreeksConfig)
+    fred_api_key: str | None = None
 
 
 def _parse_greeks_config(provider_name: str, provider_config: dict) -> GreeksConfig:
@@ -79,6 +80,7 @@ def load_config(
         config_path = resolve_config_path()
     raw = _read_config_file(config_path)
     spread_thresholds = _parse_spread_thresholds(raw)
+    fred_api_key = raw.get("fred_api_key")
 
     if provider_override:
         provider_name = provider_override
@@ -95,6 +97,7 @@ def load_config(
             provider_config=provider_config,
             spread_thresholds=spread_thresholds,
             greeks=_parse_greeks_config(provider_name, provider_config),
+            fred_api_key=fred_api_key,
         )
 
     if "default" in raw:
@@ -122,6 +125,7 @@ def load_config(
         provider_config=provider_config,
         spread_thresholds=spread_thresholds,
         greeks=_parse_greeks_config(provider_name, provider_config),
+        fred_api_key=fred_api_key,
     )
 
 
