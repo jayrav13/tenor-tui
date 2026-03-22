@@ -17,6 +17,25 @@ def sample_quote():
 
 
 @pytest.fixture
+def sample_quote_with_fundamentals():
+    return Quote(
+        symbol="AAPL",
+        name="Apple Inc.",
+        price=213.25,
+        change=1.42,
+        change_percent=0.67,
+        volume=54_200_000,
+        market_cap=3_200_000_000_000,
+        pe_ratio=31.35,
+        eps=7.91,
+        dividend_yield=0.42,
+        earnings_date="Feb 13",
+        moving_avg_50d=261.13,
+        moving_avg_200d=246.82,
+    )
+
+
+@pytest.fixture
 def sample_chain():
     calls = [
         OptionContract(

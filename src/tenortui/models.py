@@ -9,7 +9,13 @@ class Quote:
     change: float
     change_percent: float
     volume: int
-    market_cap: float | None
+    market_cap: float | None = None
+    pe_ratio: float | None = None
+    eps: float | None = None
+    dividend_yield: float | None = None
+    earnings_date: str | None = None
+    moving_avg_50d: float | None = None
+    moving_avg_200d: float | None = None
 
 
 @dataclass

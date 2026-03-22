@@ -1,3 +1,4 @@
+import datetime
 import math
 
 import yfinance as yf
@@ -16,6 +17,22 @@ def _safe_float(value, default: float = 0.0) -> float:
     if value is None or (isinstance(value, float) and math.isnan(value)):
         return default
     return float(value)
+
+
+def _safe_float_or_none(value) -> float | None:
+    if value is None or (isinstance(value, float) and math.isnan(value)):
+        return None
+    return float(value)
+
+
+def _format_earnings_date(timestamp) -> str | None:
+    if timestamp is None:
+        return None
+    try:
+        dt = datetime.datetime.fromtimestamp(int(timestamp), tz=datetime.timezone.utc)
+        return dt.strftime("%b %d")
+    except (ValueError, TypeError, OSError):
+        return None
 
 
 class YahooProvider:
@@ -39,6 +56,12 @@ class YahooProvider:
             change_percent=info.get("regularMarketChangePercent", 0.0),
             volume=info.get("regularMarketVolume", 0),
             market_cap=info.get("marketCap"),
+            pe_ratio=_safe_float_or_none(info.get("trailingPE")),
+            eps=_safe_float_or_none(info.get("trailingEps")),
+            dividend_yield=_safe_float_or_none(info.get("dividendYield")),
+            earnings_date=_format_earnings_date(info.get("earningsTimestamp")),
+            moving_avg_50d=_safe_float_or_none(info.get("fiftyDayAverage")),
+            moving_avg_200d=_safe_float_or_none(info.get("twoHundredDayAverage")),
         )
 
     def get_expirations(self, symbol: str) -> list[str]:
@@ -86,6 +109,27 @@ class YahooProvider:
             vega=None,
             rho=None,
         )
+
+
+def fetch_fundamentals(quote: Quote) -> Quote:
+    """Enrich a Quote with fundamental data from Yahoo Finance.
+
+    Always uses Yahoo regardless of which provider supplied the quote.
+    Returns the same quote with fundamental fields populated.
+    """
+    try:
+        ticker = yf.Ticker(quote.symbol)
+        info = ticker.info
+    except Exception:
+        return quote
+
+    quote.pe_ratio = _safe_float_or_none(info.get("trailingPE"))
+    quote.eps = _safe_float_or_none(info.get("trailingEps"))
+    quote.dividend_yield = _safe_float_or_none(info.get("dividendYield"))
+    quote.earnings_date = _format_earnings_date(info.get("earningsTimestamp"))
+    quote.moving_avg_50d = _safe_float_or_none(info.get("fiftyDayAverage"))
+    quote.moving_avg_200d = _safe_float_or_none(info.get("twoHundredDayAverage"))
+    return quote
 
 
 def batch_quotes(symbols: list[str]) -> list[Quote]:
