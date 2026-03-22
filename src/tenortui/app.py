@@ -7,7 +7,7 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical
 
-from tenortui.config import SpreadThresholds, load_config
+from tenortui.config import GreeksConfig, SpreadThresholds, load_config
 from tenortui.exceptions import ConfigError, ProviderError, SymbolNotFoundError
 from tenortui.history import load_history, add_to_history
 from tenortui.market_hours import MarketState, get_market_state
@@ -38,13 +38,20 @@ class TenorTUI(App):
     DEFAULT_REFRESH_INTERVAL = 60  # seconds
     OFF_HOURS_REFRESH_INTERVAL = 300  # 5 minutes when market closed
 
-    def __init__(self, provider, spread_thresholds: SpreadThresholds | None = None):
+    def __init__(
+        self,
+        provider,
+        spread_thresholds: SpreadThresholds | None = None,
+        greeks_config: GreeksConfig | None = None,
+    ):
         super().__init__()
         self._provider = provider
         self._spread_thresholds = spread_thresholds or SpreadThresholds()
+        self._greeks_config = greeks_config or GreeksConfig()
         self._current_symbol: str | None = None
         self._current_expiration: str | None = None
         self._current_price: float | None = None
+        self._current_dividend_yield: float | None = None
         self._loading_ticker: bool = False
         self._history = load_history()
         self._auto_refresh_enabled: bool = True
@@ -279,6 +286,7 @@ class TenorTUI(App):
             quote = await asyncio.to_thread(self._provider.get_quote, symbol)
             self._current_price = quote.price
             ticker_bar.show_quote(quote)
+            self._current_dividend_yield = quote.dividend_yield
             quote = await asyncio.to_thread(fetch_fundamentals, quote)
             self.query_one(FundamentalsBar).show_fundamentals(quote)
             self._history = add_to_history(symbol)
@@ -304,6 +312,19 @@ class TenorTUI(App):
                 chain = await asyncio.to_thread(
                     self._provider.get_chain, symbol, expirations[0]
                 )
+                if self._greeks_config.enabled and not any(
+                    c.has_greeks for c in chain.calls + chain.puts
+                ):
+                    from tenortui.greeks import calculate_chain_greeks
+
+                    await asyncio.to_thread(
+                        calculate_chain_greeks,
+                        chain=chain,
+                        spot=self._current_price,
+                        expiration=expirations[0],
+                        risk_free_rate=self._greeks_config.risk_free_rate,
+                        dividend_yield=self._current_dividend_yield,
+                    )
                 await chain_table.display_chain(
                     chain, self._current_price, self._spread_thresholds
                 )
@@ -329,6 +350,19 @@ class TenorTUI(App):
             chain = await asyncio.to_thread(
                 self._provider.get_chain, symbol, expiration
             )
+            if self._greeks_config.enabled and not any(
+                c.has_greeks for c in chain.calls + chain.puts
+            ):
+                from tenortui.greeks import calculate_chain_greeks
+
+                await asyncio.to_thread(
+                    calculate_chain_greeks,
+                    chain=chain,
+                    spot=self._current_price,
+                    expiration=expiration,
+                    risk_free_rate=self._greeks_config.risk_free_rate,
+                    dividend_yield=self._current_dividend_yield,
+                )
             await chain_table.display_chain(
                 chain, self._current_price, self._spread_thresholds
             )
@@ -375,5 +409,9 @@ def main() -> None:
     else:
         provider = provider_cls()
 
-    app = TenorTUI(provider=provider, spread_thresholds=config.spread_thresholds)
+    app = TenorTUI(
+        provider=provider,
+        spread_thresholds=config.spread_thresholds,
+        greeks_config=config.greeks,
+    )
     app.run()
