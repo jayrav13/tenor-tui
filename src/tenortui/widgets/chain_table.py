@@ -1,14 +1,17 @@
+from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import VerticalScroll
 from textual.widget import Widget
 from textual.widgets import DataTable, Static
 
+from tenortui.config import SpreadThresholds
 from tenortui.models import OptionsChain
 
 BASE_COLUMNS = [
     ("Strike", 10),
     ("Bid", 8),
     ("Ask", 8),
+    ("Spread", 8),
     ("Mid", 8),
     ("Last", 8),
     ("Vol", 8),
@@ -23,6 +26,8 @@ GREEK_COLUMNS = [
     ("Vega", 8),
     ("Rho", 8),
 ]
+
+DEFAULT_SPREAD_THRESHOLDS = SpreadThresholds()
 
 
 class ChainTable(Widget):
@@ -63,10 +68,14 @@ class ChainTable(Widget):
         )
 
     async def display_chain(
-        self, chain: OptionsChain, current_price: float | None = None
+        self,
+        chain: OptionsChain,
+        current_price: float | None = None,
+        spread_thresholds: SpreadThresholds | None = None,
     ) -> None:
         show_greeks = any(c.has_greeks for c in chain.calls + chain.puts)
         columns = BASE_COLUMNS + (GREEK_COLUMNS if show_greeks else [])
+        thresholds = spread_thresholds or DEFAULT_SPREAD_THRESHOLDS
 
         container = self.query_one(VerticalScroll)
         await container.remove_children()
@@ -80,9 +89,11 @@ class ChainTable(Widget):
         await container.mount(puts_table)
 
         calls_atm = self._populate_table(
-            calls_table, columns, chain.calls, current_price
+            calls_table, columns, chain.calls, current_price, thresholds
         )
-        puts_atm = self._populate_table(puts_table, columns, chain.puts, current_price)
+        puts_atm = self._populate_table(
+            puts_table, columns, chain.puts, current_price, thresholds
+        )
 
         # Place cursor on ATM row, then center it in the viewport after render
         if calls_atm is not None:
@@ -92,7 +103,19 @@ class ChainTable(Widget):
             puts_table.move_cursor(row=puts_atm)
             self._center_on_row(puts_table, puts_atm)
 
-    def _populate_table(self, table, columns, contracts, current_price) -> int | None:
+    def _format_spread(self, spread_pct: float, thresholds: SpreadThresholds) -> Text:
+        """Format spread percentage with color based on thresholds."""
+        if spread_pct < thresholds.tight:
+            color = "green"
+        elif spread_pct < thresholds.moderate:
+            color = "yellow"
+        else:
+            color = "red"
+        return Text(f"{spread_pct:.1f}%", style=color)
+
+    def _populate_table(
+        self, table, columns, contracts, current_price, thresholds
+    ) -> int | None:
         """Populate table and return the ATM row index (or None)."""
         for col_name, _width in columns:
             table.add_column(col_name, key=col_name.lower())
@@ -112,6 +135,7 @@ class ChainTable(Widget):
                 f"{contract.strike:.2f}",
                 f"{contract.bid:.2f}",
                 f"{contract.ask:.2f}",
+                self._format_spread(contract.spread_percent, thresholds),
                 f"{contract.mid:.2f}",
                 f"{contract.last_price:.2f}",
                 f"{contract.volume:,}",
