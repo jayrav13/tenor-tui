@@ -140,6 +140,26 @@ class TestYahooProviderGetQuote:
             with pytest.raises(SymbolNotFoundError):
                 provider.get_quote("FAKESYMBOL")
 
+    def test_dividend_yield_populated(self):
+        info = _load_fixture("yahoo_quote.json")
+        info["dividendYield"] = 0.0055
+        provider = YahooProvider()
+        with patch(
+            "tenortui.providers.yahoo.yf.Ticker", return_value=_mock_ticker(info)
+        ):
+            quote = provider.get_quote("AAPL")
+        assert quote.dividend_yield == 0.0055
+
+    def test_dividend_yield_none_when_missing(self):
+        info = _load_fixture("yahoo_quote.json")
+        info.pop("dividendYield", None)
+        provider = YahooProvider()
+        with patch(
+            "tenortui.providers.yahoo.yf.Ticker", return_value=_mock_ticker(info)
+        ):
+            quote = provider.get_quote("AAPL")
+        assert quote.dividend_yield is None
+
 
 class TestYahooProviderGetExpirations:
     def test_returns_expirations(self):

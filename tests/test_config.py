@@ -129,3 +129,52 @@ class TestSpreadThresholds:
         rc.write_text("---\ndefault: yahoo\nspread_thresholds: not_a_dict\n")
         config = load_config(config_path=rc)
         assert config.spread_thresholds == SpreadThresholds()
+
+
+class TestGreeksConfig:
+    def test_defaults_when_no_config(self, tmp_path):
+        config = load_config(config_path=tmp_path / "nonexistent")
+        assert config.greeks.enabled is False
+        assert config.greeks.risk_free_rate == 0.05
+
+    def test_greeks_enabled(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text("---\ndefault: yahoo\nyahoo:\n  greeks:\n    enabled: true\n")
+        config = load_config(config_path=rc)
+        assert config.greeks.enabled is True
+        assert config.greeks.risk_free_rate == 0.05
+
+    def test_custom_risk_free_rate(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text(
+            "---\ndefault: yahoo\nyahoo:\n  greeks:\n    enabled: true\n    risk_free_rate: 0.04\n"
+        )
+        config = load_config(config_path=rc)
+        assert config.greeks.risk_free_rate == 0.04
+
+    def test_greeks_not_parsed_for_tradier(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text(
+            "---\ndefault: tradier\ntradier:\n  api_key: abc\n  greeks:\n    enabled: true\n"
+        )
+        config = load_config(config_path=rc)
+        assert config.greeks.enabled is False
+
+    def test_greeks_with_provider_override(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text("---\nyahoo:\n  greeks:\n    enabled: true\n")
+        config = load_config(config_path=rc, provider_override="yahoo")
+        assert config.greeks.enabled is True
+
+    def test_greeks_missing_section_uses_defaults(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text("---\ndefault: yahoo\nyahoo: {}\n")
+        config = load_config(config_path=rc)
+        assert config.greeks.enabled is False
+        assert config.greeks.risk_free_rate == 0.05
+
+    def test_greeks_invalid_section_uses_defaults(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text("---\ndefault: yahoo\nyahoo:\n  greeks: not_a_dict\n")
+        config = load_config(config_path=rc)
+        assert config.greeks.enabled is False

@@ -57,3 +57,4 @@ class OptionsChain:
     expiration: str
     calls: list[OptionContract]
     puts: list[OptionContract]
+    greeks_calculated: bool = False

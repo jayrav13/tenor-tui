@@ -233,3 +233,17 @@ class TestOptionsChain:
         assert chain.expiration == "2026-03-21"
         assert chain.calls == []
         assert chain.puts == []
+
+    def test_greeks_calculated_default_false(self):
+        chain = OptionsChain(symbol="AAPL", expiration="2026-03-21", calls=[], puts=[])
+        assert chain.greeks_calculated is False
+
+    def test_greeks_calculated_set_true(self):
+        chain = OptionsChain(
+            symbol="AAPL",
+            expiration="2026-03-21",
+            calls=[],
+            puts=[],
+            greeks_calculated=True,
+        )
+        assert chain.greeks_calculated is True
