@@ -44,6 +44,7 @@ class TenorTUI(App):
         provider,
         spread_thresholds: SpreadThresholds | None = None,
         greeks_config: GreeksConfig | None = None,
+        fred_api_key: str | None = None,
     ):
         super().__init__()
         self._provider = provider
@@ -59,7 +60,10 @@ class TenorTUI(App):
         self._auto_refresh_countdown: int = 0
         self._refresh_timer = None
         self._countdown_timer = None
-        rate, is_live = get_risk_free_rate(fallback=self._greeks_config.risk_free_rate)
+        rate, is_live = get_risk_free_rate(
+            fallback=self._greeks_config.risk_free_rate,
+            fred_api_key=fred_api_key,
+        )
         self._risk_free_rate = rate
         self._risk_free_rate_is_live = is_live
 
@@ -420,5 +424,6 @@ def main() -> None:
         provider=provider,
         spread_thresholds=config.spread_thresholds,
         greeks_config=config.greeks,
+        fred_api_key=config.fred_api_key,
     )
     app.run()

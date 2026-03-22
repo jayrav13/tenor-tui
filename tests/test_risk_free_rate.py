@@ -4,6 +4,8 @@ from unittest.mock import patch, MagicMock
 import tenortui.risk_free_rate as rfr_module
 from tenortui.risk_free_rate import get_risk_free_rate
 
+TEST_KEY = "test_api_key_32chars_placeholder_"
+
 
 @pytest.fixture(autouse=True)
 def reset_cache():
@@ -23,7 +25,7 @@ class TestGetRiskFreeRate:
     def test_successful_fetch(self):
         resp = _mock_response([{"date": "2026-03-20", "value": "4.32"}])
         with patch("tenortui.risk_free_rate.requests.get", return_value=resp):
-            rate, is_live = get_risk_free_rate()
+            rate, is_live = get_risk_free_rate(fred_api_key=TEST_KEY)
         assert rate == pytest.approx(0.0432)
         assert is_live is True
 
@@ -35,7 +37,7 @@ class TestGetRiskFreeRate:
             ]
         )
         with patch("tenortui.risk_free_rate.requests.get", return_value=resp):
-            rate, is_live = get_risk_free_rate()
+            rate, is_live = get_risk_free_rate(fred_api_key=TEST_KEY)
         assert rate == pytest.approx(0.0430)
         assert is_live is True
 
@@ -43,7 +45,7 @@ class TestGetRiskFreeRate:
         with patch(
             "tenortui.risk_free_rate.requests.get", side_effect=Exception("timeout")
         ):
-            rate, is_live = get_risk_free_rate(fallback=0.05)
+            rate, is_live = get_risk_free_rate(fallback=0.05, fred_api_key=TEST_KEY)
         assert rate == 0.05
         assert is_live is False
 
@@ -52,14 +54,14 @@ class TestGetRiskFreeRate:
         with patch(
             "tenortui.risk_free_rate.requests.get", return_value=resp
         ) as mock_get:
-            get_risk_free_rate()
-            get_risk_free_rate()
+            get_risk_free_rate(fred_api_key=TEST_KEY)
+            get_risk_free_rate(fred_api_key=TEST_KEY)
             assert mock_get.call_count == 1
 
     def test_empty_observations_returns_fallback(self):
         resp = _mock_response([])
         with patch("tenortui.risk_free_rate.requests.get", return_value=resp):
-            rate, is_live = get_risk_free_rate(fallback=0.03)
+            rate, is_live = get_risk_free_rate(fallback=0.03, fred_api_key=TEST_KEY)
         assert rate == 0.03
         assert is_live is False
 
@@ -71,21 +73,21 @@ class TestGetRiskFreeRate:
             ]
         )
         with patch("tenortui.risk_free_rate.requests.get", return_value=resp):
-            rate, is_live = get_risk_free_rate(fallback=0.05)
+            rate, is_live = get_risk_free_rate(fallback=0.05, fred_api_key=TEST_KEY)
         assert rate == 0.05
         assert is_live is False
 
     def test_rate_conversion(self):
         resp = _mock_response([{"date": "2026-03-20", "value": "5.00"}])
         with patch("tenortui.risk_free_rate.requests.get", return_value=resp):
-            rate, is_live = get_risk_free_rate()
+            rate, is_live = get_risk_free_rate(fred_api_key=TEST_KEY)
         assert rate == pytest.approx(0.05)
 
     def test_custom_fallback(self):
         with patch(
             "tenortui.risk_free_rate.requests.get", side_effect=Exception("err")
         ):
-            rate, is_live = get_risk_free_rate(fallback=0.04)
+            rate, is_live = get_risk_free_rate(fallback=0.04, fred_api_key=TEST_KEY)
         assert rate == 0.04
         assert is_live is False
 
@@ -93,6 +95,16 @@ class TestGetRiskFreeRate:
         resp = MagicMock()
         resp.raise_for_status.side_effect = Exception("HTTP 500")
         with patch("tenortui.risk_free_rate.requests.get", return_value=resp):
-            rate, is_live = get_risk_free_rate()
+            rate, is_live = get_risk_free_rate(fred_api_key=TEST_KEY)
         assert rate == 0.05
+        assert is_live is False
+
+    def test_no_api_key_returns_fallback(self):
+        rate, is_live = get_risk_free_rate(fallback=0.05)
+        assert rate == 0.05
+        assert is_live is False
+
+    def test_none_api_key_returns_fallback(self):
+        rate, is_live = get_risk_free_rate(fallback=0.03, fred_api_key=None)
+        assert rate == 0.03
         assert is_live is False
