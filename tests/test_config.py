@@ -1,6 +1,6 @@
 import pytest
 
-from tenortui.config import load_config, resolve_config_path
+from tenortui.config import SpreadThresholds, load_config, resolve_config_path
 from tenortui.exceptions import ConfigError
 
 
@@ -91,3 +91,41 @@ class TestConfigPathMigration:
         old_path = tmp_path / ".tenorrc"
         resolved = resolve_config_path(new_path=new_path, legacy_path=old_path)
         assert resolved == new_path
+
+
+class TestSpreadThresholds:
+    def test_defaults_when_no_config(self, tmp_path):
+        config = load_config(config_path=tmp_path / "nonexistent")
+        assert config.spread_thresholds.tight == 5.0
+        assert config.spread_thresholds.moderate == 15.0
+
+    def test_custom_thresholds(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text(
+            "---\ndefault: yahoo\nspread_thresholds:\n  tight: 3.0\n  moderate: 10.0\n"
+        )
+        config = load_config(config_path=rc)
+        assert config.spread_thresholds.tight == 3.0
+        assert config.spread_thresholds.moderate == 10.0
+
+    def test_partial_thresholds_uses_defaults(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text("---\ndefault: yahoo\nspread_thresholds:\n  tight: 2.0\n")
+        config = load_config(config_path=rc)
+        assert config.spread_thresholds.tight == 2.0
+        assert config.spread_thresholds.moderate == 15.0
+
+    def test_thresholds_with_provider_override(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text(
+            "---\ndefault: yahoo\nspread_thresholds:\n  tight: 4.0\n  moderate: 12.0\n"
+        )
+        config = load_config(config_path=rc, provider_override="yahoo")
+        assert config.spread_thresholds.tight == 4.0
+        assert config.spread_thresholds.moderate == 12.0
+
+    def test_invalid_spread_thresholds_uses_defaults(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text("---\ndefault: yahoo\nspread_thresholds: not_a_dict\n")
+        config = load_config(config_path=rc)
+        assert config.spread_thresholds == SpreadThresholds()

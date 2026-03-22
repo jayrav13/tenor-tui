@@ -28,9 +28,27 @@ def resolve_config_path(
 
 
 @dataclass
+class SpreadThresholds:
+    tight: float = 5.0
+    moderate: float = 15.0
+
+
+@dataclass
 class AppConfig:
     provider_name: str
     provider_config: dict = field(default_factory=dict)
+    spread_thresholds: SpreadThresholds = field(default_factory=SpreadThresholds)
+
+
+def _parse_spread_thresholds(raw: dict) -> SpreadThresholds:
+    """Parse spread_thresholds from raw config, falling back to defaults."""
+    section = raw.get("spread_thresholds")
+    if not isinstance(section, dict):
+        return SpreadThresholds()
+    return SpreadThresholds(
+        tight=float(section.get("tight", 5.0)),
+        moderate=float(section.get("moderate", 15.0)),
+    )
 
 
 def load_config(
@@ -40,6 +58,7 @@ def load_config(
     if config_path is None:
         config_path = resolve_config_path()
     raw = _read_config_file(config_path)
+    spread_thresholds = _parse_spread_thresholds(raw)
 
     if provider_override:
         provider_name = provider_override
@@ -51,7 +70,11 @@ def load_config(
                 f"Unknown provider '{provider_name}'. "
                 f"Available: {', '.join(sorted(KNOWN_PROVIDERS))}"
             )
-        return AppConfig(provider_name=provider_name, provider_config=provider_config)
+        return AppConfig(
+            provider_name=provider_name,
+            provider_config=provider_config,
+            spread_thresholds=spread_thresholds,
+        )
 
     if "default" in raw:
         provider_name = raw["default"]
@@ -73,7 +96,11 @@ def load_config(
                 f"Provider '{provider_name}' requires '{req_field}' in ~/.config/tenor/config.yaml"
             )
 
-    return AppConfig(provider_name=provider_name, provider_config=provider_config)
+    return AppConfig(
+        provider_name=provider_name,
+        provider_config=provider_config,
+        spread_thresholds=spread_thresholds,
+    )
 
 
 def _read_config_file(path: Path) -> dict:

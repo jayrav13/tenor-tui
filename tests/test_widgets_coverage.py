@@ -4,6 +4,7 @@ recently_viewed, expiry_selector, status_bar edge cases."""
 import pytest
 from textual.app import App, ComposeResult
 
+from tenortui.config import SpreadThresholds
 from tenortui.models import OptionContract, OptionsChain, Quote
 from tenortui.widgets.chain_table import ChainTable
 from tenortui.widgets.expiry_selector import ExpirySelector
@@ -128,6 +129,49 @@ async def test_chain_table_display_chain_replaces_previous():
     async with app.run_test():
         await widget.display_chain(chain1, current_price=200.0)
         await widget.display_chain(chain2, current_price=305.0)
+
+
+@pytest.mark.asyncio
+async def test_chain_table_has_spread_column():
+    """ChainTable includes a Spread column in both calls and puts tables."""
+    chain = OptionsChain(
+        symbol="AAPL",
+        expiration="2026-03-21",
+        calls=[_make_contract(200.0), _make_contract(210.0)],
+        puts=[_make_contract(200.0, "put")],
+    )
+    widget = ChainTable()
+    app = WidgetTestApp(widget)
+    async with app.run_test():
+        await widget.display_chain(chain, current_price=205.0)
+        from textual.widgets import DataTable
+
+        tables = widget.query(DataTable)
+        for table in tables:
+            col_keys = [col.key.value for col in table.columns.values()]
+            assert "spread" in col_keys
+
+
+@pytest.mark.asyncio
+async def test_chain_table_spread_color_classification():
+    """Spread column uses correct colors for tight/moderate/wide spreads."""
+    widget = ChainTable()
+    thresholds = SpreadThresholds(tight=5.0, moderate=15.0)
+    # With bid=1.0 and ask=1.5, spread = 0.5/1.25*100 = 40% => red
+    spread_text = widget._format_spread(40.0, thresholds)
+    assert spread_text.style == "red"
+    # Tight spread
+    spread_text = widget._format_spread(2.0, thresholds)
+    assert spread_text.style == "green"
+    # Moderate spread
+    spread_text = widget._format_spread(10.0, thresholds)
+    assert spread_text.style == "yellow"
+    # Boundary: exactly at tight threshold => moderate (yellow)
+    spread_text = widget._format_spread(5.0, thresholds)
+    assert spread_text.style == "yellow"
+    # Boundary: exactly at moderate threshold => wide (red)
+    spread_text = widget._format_spread(15.0, thresholds)
+    assert spread_text.style == "red"
 
 
 # --- TickerBar ---

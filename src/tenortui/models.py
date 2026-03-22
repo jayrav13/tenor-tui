@@ -34,6 +34,13 @@ class OptionContract:
         return (self.bid + self.ask) / 2
 
     @property
+    def spread_percent(self) -> float:
+        """Bid-ask spread as percentage of mid price."""
+        if self.mid == 0:
+            return 0.0
+        return ((self.ask - self.bid) / self.mid) * 100
+
+    @property
     def has_greeks(self) -> bool:
         return self.delta is not None
 

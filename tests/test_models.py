@@ -123,6 +123,68 @@ class TestOptionContract:
         assert with_greeks.has_greeks is True
         assert without_greeks.has_greeks is False
 
+    def test_spread_percent(self):
+        c = OptionContract(
+            contract_symbol="AAPL260321C00200000",
+            option_type="call",
+            strike=200.0,
+            bid=14.20,
+            ask=14.50,
+            last_price=14.35,
+            volume=1234,
+            open_interest=8901,
+            implied_volatility=0.32,
+            delta=None,
+            gamma=None,
+            theta=None,
+            vega=None,
+            rho=None,
+        )
+        # spread = (14.50 - 14.20) / 14.35 * 100 = 2.09...%
+        expected = ((14.50 - 14.20) / ((14.20 + 14.50) / 2)) * 100
+        assert abs(c.spread_percent - expected) < 0.001
+
+    def test_spread_percent_zero_mid(self):
+        c = OptionContract(
+            contract_symbol="AAPL260321C00500000",
+            option_type="call",
+            strike=500.0,
+            bid=0.0,
+            ask=0.0,
+            last_price=0.0,
+            volume=0,
+            open_interest=0,
+            implied_volatility=0.0,
+            delta=None,
+            gamma=None,
+            theta=None,
+            vega=None,
+            rho=None,
+        )
+        assert c.spread_percent == 0.0
+
+    def test_spread_percent_wide(self):
+        c = OptionContract(
+            contract_symbol="AAPL260321P00200000",
+            option_type="put",
+            strike=200.0,
+            bid=0.10,
+            ask=0.50,
+            last_price=0.30,
+            volume=10,
+            open_interest=50,
+            implied_volatility=0.50,
+            delta=None,
+            gamma=None,
+            theta=None,
+            vega=None,
+            rho=None,
+        )
+        # spread = (0.50 - 0.10) / 0.30 * 100 = 133.33%
+        expected = ((0.50 - 0.10) / ((0.10 + 0.50) / 2)) * 100
+        assert c.spread_percent > 100.0
+        assert abs(c.spread_percent - expected) < 0.01
+
 
 class TestOptionsChain:
     def test_create_chain(self):
