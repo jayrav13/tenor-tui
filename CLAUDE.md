@@ -88,7 +88,7 @@ Provider methods are synchronous — the app wraps them with `asyncio.to_thread(
 
 ### Configuration
 
-`config.py` loads YAML from `~/.config/tenor/config.yaml` (falls back to `~/.tenorrc`). Provider can be overridden via `--provider` CLI flag. Each provider declares required fields in `PROVIDER_REQUIRED_FIELDS`.
+`config.py` loads YAML from `~/.config/tenor/config.yaml` (falls back to `~/.tenorrc`). Provider can be overridden via `--provider` CLI flag. Each provider declares required fields in `PROVIDER_REQUIRED_FIELDS`. All config options are registered in the `CONFIG_OPTIONS` list in `config.py` — when adding or modifying config options, update this registry to keep `--config-help` output in sync.
 
 ### History
 

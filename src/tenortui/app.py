@@ -7,7 +7,12 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Vertical
 
-from tenortui.config import GreeksConfig, SpreadThresholds, load_config
+from tenortui.config import (
+    GreeksConfig,
+    SpreadThresholds,
+    load_config,
+    print_config_help,
+)
 from tenortui.exceptions import ConfigError, ProviderError, SymbolNotFoundError
 from tenortui.history import load_history, add_to_history
 from tenortui.market_hours import MarketState, get_market_state
@@ -387,11 +392,20 @@ def _parse_args() -> argparse.Namespace:
         default=None,
         help="Data provider to use (overrides ~/.tenorrc)",
     )
+    parser.add_argument(
+        "--config-help",
+        action="store_true",
+        help="Show all configuration options and exit",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = _parse_args()
+
+    if args.config_help:
+        print_config_help()
+        sys.exit(0)
 
     try:
         config = load_config(provider_override=args.provider)
