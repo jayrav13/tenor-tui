@@ -1,4 +1,4 @@
-from tenortui.greeks import calculate_european, calculate_intrinsic
+from tenortui.greeks import calculate_american, calculate_european, calculate_intrinsic
 
 
 class TestIntrinsicTier:
@@ -136,3 +136,111 @@ class TestEuropeanTier:
         )
         assert result["model"] == "european"
         assert abs(result["delta"] - 0.5) < 0.1
+
+
+class TestAmericanTier:
+    """CRR binomial should be close to European for no-dividend calls,
+    and should price higher than European for puts (early exercise premium)."""
+
+    def test_call_no_dividend_matches_european(self):
+        """Without dividends, American call == European call."""
+        american = calculate_american(
+            spot=100.0,
+            strike=100.0,
+            T=1.0,
+            r=0.05,
+            sigma=0.20,
+            q=0.0,
+            option_type="call",
+        )
+        european = calculate_european(
+            spot=100.0,
+            strike=100.0,
+            T=1.0,
+            r=0.05,
+            sigma=0.20,
+            q=0.0,
+            option_type="call",
+        )
+        assert american["model"] == "american"
+        assert abs(american["delta"] - european["delta"]) < 0.02
+        assert abs(american["price"] - european["price"]) < 0.5
+
+    def test_put_early_exercise_premium(self):
+        """American put should be worth >= European put."""
+        american = calculate_american(
+            spot=100.0,
+            strike=100.0,
+            T=1.0,
+            r=0.05,
+            sigma=0.20,
+            q=0.0,
+            option_type="put",
+        )
+        european = calculate_european(
+            spot=100.0,
+            strike=100.0,
+            T=1.0,
+            r=0.05,
+            sigma=0.20,
+            q=0.0,
+            option_type="put",
+        )
+        assert american["price"] >= european["price"] - 0.01
+
+    def test_deep_itm_put(self):
+        american = calculate_american(
+            spot=50.0,
+            strike=100.0,
+            T=1.0,
+            r=0.05,
+            sigma=0.20,
+            q=0.0,
+            option_type="put",
+        )
+        assert american["delta"] < -0.9
+        assert american["price"] > 45.0
+
+    def test_greeks_have_correct_signs(self):
+        call = calculate_american(
+            spot=100.0,
+            strike=100.0,
+            T=1.0,
+            r=0.05,
+            sigma=0.20,
+            q=0.0,
+            option_type="call",
+        )
+        assert call["delta"] > 0
+        assert call["gamma"] > 0
+        assert call["theta"] < 0
+        assert call["vega"] > 0
+        assert call["rho"] > 0
+
+        put = calculate_american(
+            spot=100.0,
+            strike=100.0,
+            T=1.0,
+            r=0.05,
+            sigma=0.20,
+            q=0.0,
+            option_type="put",
+        )
+        assert put["delta"] < 0
+        assert put["gamma"] > 0
+        assert put["theta"] < 0
+        assert put["vega"] > 0
+        assert put["rho"] < 0
+
+    def test_with_dividend_yield(self):
+        result = calculate_american(
+            spot=100.0,
+            strike=100.0,
+            T=1.0,
+            r=0.05,
+            sigma=0.20,
+            q=0.02,
+            option_type="call",
+        )
+        assert result["model"] == "american"
+        assert result["delta"] > 0
