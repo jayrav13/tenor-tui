@@ -8,7 +8,7 @@ class FundamentalsBar(Widget):
     DEFAULT_CSS = """
     FundamentalsBar {
         height: 1;
-        background: $surface;
+        background: $primary-background;
         padding: 0 1;
     }
     FundamentalsBar.hidden {
@@ -16,7 +16,7 @@ class FundamentalsBar(Widget):
     }
     FundamentalsBar #fundamentals-display {
         width: 1fr;
-        color: $text-muted;
+        color: $text;
     }
     """
 
