@@ -40,12 +40,20 @@ class GreeksConfig:
 
 
 @dataclass
+class RefreshConfig:
+    regular: int = 60
+    extended: int = 120
+    closed: int = 300
+
+
+@dataclass
 class AppConfig:
     provider_name: str
     provider_config: dict = field(default_factory=dict)
     spread_thresholds: SpreadThresholds = field(default_factory=SpreadThresholds)
     greeks: GreeksConfig = field(default_factory=GreeksConfig)
     fred_api_key: str | None = None
+    refresh: RefreshConfig = field(default_factory=RefreshConfig)
 
 
 def _parse_greeks_config(provider_name: str, provider_config: dict) -> GreeksConfig:
@@ -58,6 +66,18 @@ def _parse_greeks_config(provider_name: str, provider_config: dict) -> GreeksCon
     return GreeksConfig(
         enabled=bool(section.get("enabled", False)),
         risk_free_rate=float(section.get("risk_free_rate", 0.05)),
+    )
+
+
+def _parse_refresh_config(raw: dict) -> RefreshConfig:
+    """Parse refresh intervals from raw config, falling back to defaults."""
+    section = raw.get("refresh")
+    if not isinstance(section, dict):
+        return RefreshConfig()
+    return RefreshConfig(
+        regular=int(section.get("regular", 60)),
+        extended=int(section.get("extended", 120)),
+        closed=int(section.get("closed", 300)),
     )
 
 
@@ -80,6 +100,7 @@ def load_config(
         config_path = resolve_config_path()
     raw = _read_config_file(config_path)
     spread_thresholds = _parse_spread_thresholds(raw)
+    refresh = _parse_refresh_config(raw)
     fred_api_key = raw.get("fred_api_key")
 
     if provider_override:
@@ -98,6 +119,7 @@ def load_config(
             spread_thresholds=spread_thresholds,
             greeks=_parse_greeks_config(provider_name, provider_config),
             fred_api_key=fred_api_key,
+            refresh=refresh,
         )
 
     if "default" in raw:
@@ -126,6 +148,7 @@ def load_config(
         spread_thresholds=spread_thresholds,
         greeks=_parse_greeks_config(provider_name, provider_config),
         fred_api_key=fred_api_key,
+        refresh=refresh,
     )
 
 
@@ -184,6 +207,24 @@ CONFIG_OPTIONS: list[ConfigOption] = [
         type_name="float",
         default="15.0",
         description="Bid-ask spread percentage threshold for moderate spread highlighting (yellow). Spreads above this are red.",
+    ),
+    ConfigOption(
+        key="refresh.regular",
+        type_name="int",
+        default="60",
+        description="Auto-refresh interval in seconds during regular market hours.",
+    ),
+    ConfigOption(
+        key="refresh.extended",
+        type_name="int",
+        default="120",
+        description="Auto-refresh interval in seconds during pre-market and after-hours.",
+    ),
+    ConfigOption(
+        key="refresh.closed",
+        type_name="int",
+        default="300",
+        description="Auto-refresh interval in seconds when the market is closed.",
     ),
 ]
 
@@ -259,6 +300,10 @@ def print_config_help(config_path: Path | None = None) -> None:
     lines.append("spread_thresholds:")
     lines.append("  tight: 3.0")
     lines.append("  moderate: 10.0")
+    lines.append("refresh:")
+    lines.append("  regular: 5")
+    lines.append("  extended: 30")
+    lines.append("  closed: 300")
 
     print("\n".join(lines))
 

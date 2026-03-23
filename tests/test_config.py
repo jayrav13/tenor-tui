@@ -1,6 +1,11 @@
 import pytest
 
-from tenortui.config import SpreadThresholds, load_config, resolve_config_path
+from tenortui.config import (
+    RefreshConfig,
+    SpreadThresholds,
+    load_config,
+    resolve_config_path,
+)
 from tenortui.exceptions import ConfigError
 
 
@@ -178,3 +183,45 @@ class TestGreeksConfig:
         rc.write_text("---\ndefault: yahoo\nyahoo:\n  greeks: not_a_dict\n")
         config = load_config(config_path=rc)
         assert config.greeks.enabled is False
+
+
+class TestRefreshConfig:
+    def test_defaults_when_no_config(self, tmp_path):
+        config = load_config(config_path=tmp_path / "nonexistent")
+        assert config.refresh.regular == 60
+        assert config.refresh.extended == 120
+        assert config.refresh.closed == 300
+
+    def test_custom_refresh_intervals(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text(
+            "---\ndefault: yahoo\nrefresh:\n  regular: 5\n  extended: 30\n  closed: 600\n"
+        )
+        config = load_config(config_path=rc)
+        assert config.refresh.regular == 5
+        assert config.refresh.extended == 30
+        assert config.refresh.closed == 600
+
+    def test_partial_refresh_uses_defaults(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text("---\ndefault: yahoo\nrefresh:\n  regular: 10\n")
+        config = load_config(config_path=rc)
+        assert config.refresh.regular == 10
+        assert config.refresh.extended == 120
+        assert config.refresh.closed == 300
+
+    def test_invalid_refresh_uses_defaults(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text("---\ndefault: yahoo\nrefresh: not_a_dict\n")
+        config = load_config(config_path=rc)
+        assert config.refresh == RefreshConfig()
+
+    def test_refresh_with_provider_override(self, tmp_path):
+        rc = tmp_path / "config.yaml"
+        rc.write_text(
+            "---\ndefault: yahoo\nrefresh:\n  regular: 15\n  extended: 45\n  closed: 120\n"
+        )
+        config = load_config(config_path=rc, provider_override="yahoo")
+        assert config.refresh.regular == 15
+        assert config.refresh.extended == 45
+        assert config.refresh.closed == 120

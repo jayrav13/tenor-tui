@@ -9,6 +9,7 @@ from textual.containers import Vertical
 
 from tenortui.config import (
     GreeksConfig,
+    RefreshConfig,
     SpreadThresholds,
     load_config,
     print_config_help,
@@ -41,20 +42,19 @@ class TenorTUI(App):
         Binding("ctrl+p", "toggle_auto_refresh", "Pause Refresh", priority=True),
     ]
 
-    DEFAULT_REFRESH_INTERVAL = 60  # seconds
-    OFF_HOURS_REFRESH_INTERVAL = 300  # 5 minutes when market closed
-
     def __init__(
         self,
         provider,
         spread_thresholds: SpreadThresholds | None = None,
         greeks_config: GreeksConfig | None = None,
         fred_api_key: str | None = None,
+        refresh_config: RefreshConfig | None = None,
     ):
         super().__init__()
         self._provider = provider
         self._spread_thresholds = spread_thresholds or SpreadThresholds()
         self._greeks_config = greeks_config or GreeksConfig()
+        self._refresh_config = refresh_config or RefreshConfig()
         self._current_symbol: str | None = None
         self._current_expiration: str | None = None
         self._current_price: float | None = None
@@ -134,11 +134,11 @@ class TenorTUI(App):
         """Get refresh interval based on market state."""
         state = get_market_state()
         if state == MarketState.REGULAR:
-            return self.DEFAULT_REFRESH_INTERVAL
+            return self._refresh_config.regular
         elif state in (MarketState.PRE_MARKET, MarketState.AFTER_HOURS):
-            return self.DEFAULT_REFRESH_INTERVAL * 2  # 2x during extended hours
+            return self._refresh_config.extended
         else:
-            return self.OFF_HOURS_REFRESH_INTERVAL
+            return self._refresh_config.closed
 
     def _start_auto_refresh(self) -> None:
         """Start the auto-refresh timer."""
@@ -438,5 +438,6 @@ def main() -> None:
         spread_thresholds=config.spread_thresholds,
         greeks_config=config.greeks,
         fred_api_key=config.fred_api_key,
+        refresh_config=config.refresh,
     )
     app.run()

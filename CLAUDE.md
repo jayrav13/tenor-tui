@@ -181,10 +181,24 @@ After pushing a PR, monitor CI status:
 gh pr checks <pr-number> --watch
 ```
 
-- **All passed**: notify user and await instruction to merge
+- **All passed**: notify user, provide the local test command (see below), and await instruction to merge
 - **Failed**: investigate the failure, propose a fix — do NOT merge
 
 Do NOT merge the PR automatically. Wait for explicit user instruction to merge.
+
+### 5a. Provide Local Test Command
+
+After CI passes, give the user a command to test the feature locally in the worktree. Print the command and copy it to clipboard so they can paste it into a separate terminal:
+
+```bash
+# Print the command for the user
+echo "cd <worktree-path> && poetry install && poetry run tenortui"
+
+# Copy to clipboard (note: cd may be stripped by sandbox, so ask the user to run it themselves)
+! echo -n "cd $(pwd) && poetry install && poetry run tenortui" | pbcopy
+```
+
+The `cd` prefix gets stripped by the Claude Code sandbox when using `pbcopy`, so ask the user to run the `!`-prefixed clipboard command themselves.
 
 ### 6. Merge PR
 
