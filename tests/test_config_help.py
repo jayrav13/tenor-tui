@@ -12,6 +12,9 @@ EXPECTED_KEYS = [
     "tradier.sandbox",
     "spread_thresholds.tight",
     "spread_thresholds.moderate",
+    "refresh.regular",
+    "refresh.extended",
+    "refresh.closed",
 ]
 
 
@@ -82,6 +85,13 @@ class TestPrintConfigHelp:
         output = self._capture_output()
         assert "Only when provider is yahoo" in output
         assert "Required when provider is tradier" in output
+
+    def test_refresh_section_in_output(self):
+        output = self._capture_output()
+        assert "refresh:" in output
+        assert "regular" in output
+        assert "extended" in output
+        assert "closed" in output
 
 
 class TestConfigHelpArgparse:

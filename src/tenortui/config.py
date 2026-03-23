@@ -208,6 +208,24 @@ CONFIG_OPTIONS: list[ConfigOption] = [
         default="15.0",
         description="Bid-ask spread percentage threshold for moderate spread highlighting (yellow). Spreads above this are red.",
     ),
+    ConfigOption(
+        key="refresh.regular",
+        type_name="int",
+        default="60",
+        description="Auto-refresh interval in seconds during regular market hours.",
+    ),
+    ConfigOption(
+        key="refresh.extended",
+        type_name="int",
+        default="120",
+        description="Auto-refresh interval in seconds during pre-market and after-hours.",
+    ),
+    ConfigOption(
+        key="refresh.closed",
+        type_name="int",
+        default="300",
+        description="Auto-refresh interval in seconds when the market is closed.",
+    ),
 ]
 
 
@@ -282,6 +300,10 @@ def print_config_help(config_path: Path | None = None) -> None:
     lines.append("spread_thresholds:")
     lines.append("  tight: 3.0")
     lines.append("  moderate: 10.0")
+    lines.append("refresh:")
+    lines.append("  regular: 5")
+    lines.append("  extended: 30")
+    lines.append("  closed: 300")
 
     print("\n".join(lines))
 
