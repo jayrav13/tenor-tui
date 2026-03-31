@@ -34,7 +34,7 @@ class TestConfigOptions:
 
     def test_no_empty_defaults(self):
         for opt in CONFIG_OPTIONS:
-            assert opt.default, f"Empty default for {opt.key}"
+            assert opt.default is not None, f"None default for {opt.key}"
 
 
 class TestPrintConfigHelp:

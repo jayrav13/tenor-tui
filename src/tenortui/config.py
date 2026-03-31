@@ -56,6 +56,26 @@ class AppConfig:
     refresh: RefreshConfig = field(default_factory=RefreshConfig)
 
 
+def save_config(changes: dict, config_path: Path | None = None) -> None:
+    """Deep-merge *changes* into the config file and write it back."""
+    if config_path is None:
+        config_path = resolve_config_path()
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    existing = _read_config_file(config_path) if config_path.exists() else {}
+    _deep_merge(existing, changes)
+    with open(config_path, "w") as f:
+        yaml.safe_dump(existing, f, default_flow_style=False, sort_keys=False)
+
+
+def _deep_merge(base: dict, overrides: dict) -> None:
+    """Recursively merge overrides into base dict, mutating base."""
+    for key, value in overrides.items():
+        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            _deep_merge(base[key], value)
+        else:
+            base[key] = value
+
+
 def _parse_greeks_config(provider_name: str, provider_config: dict) -> GreeksConfig:
     """Parse greeks config from provider section. Only applies to Yahoo."""
     if provider_name != "yahoo":
@@ -225,6 +245,12 @@ CONFIG_OPTIONS: list[ConfigOption] = [
         type_name="int",
         default="300",
         description="Auto-refresh interval in seconds when the market is closed.",
+    ),
+    ConfigOption(
+        key="fred_api_key",
+        type_name="str",
+        default="",
+        description="FRED API key for fetching live risk-free rate. Optional.",
     ),
 ]
 
