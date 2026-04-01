@@ -8,6 +8,7 @@ from textual.binding import Binding
 from textual.containers import Vertical
 
 from tenortui.config import (
+    AppConfig,
     GreeksConfig,
     RefreshConfig,
     SpreadThresholds,
@@ -26,6 +27,7 @@ from tenortui.widgets.command_palette import CommandPalette
 from tenortui.widgets.expiry_selector import ExpirySelector
 from tenortui.widgets.help_overlay import HelpOverlay
 from tenortui.widgets.recently_viewed import RecentlyViewed
+from tenortui.widgets.settings_screen import SettingsScreen
 from tenortui.widgets.status_bar import StatusBar
 from tenortui.widgets.ticker_bar import TickerBar
 
@@ -40,6 +42,7 @@ class TenorTUI(App):
         ("s", "focus_search", "Search"),
         ("ctrl+r", "refresh", "Refresh"),
         Binding("ctrl+p", "toggle_auto_refresh", "Pause Refresh", priority=True),
+        Binding("comma", "open_settings", "Settings", show=False),
     ]
 
     def __init__(
@@ -49,6 +52,7 @@ class TenorTUI(App):
         greeks_config: GreeksConfig | None = None,
         fred_api_key: str | None = None,
         refresh_config: RefreshConfig | None = None,
+        app_config: AppConfig | None = None,
     ):
         super().__init__()
         self._provider = provider
@@ -71,6 +75,13 @@ class TenorTUI(App):
         )
         self._risk_free_rate = rate
         self._risk_free_rate_is_live = is_live
+        self._app_config = app_config or AppConfig(
+            provider_name=getattr(provider, "name", "yahoo"),
+            spread_thresholds=self._spread_thresholds,
+            greeks=self._greeks_config,
+            fred_api_key=fred_api_key,
+            refresh=self._refresh_config,
+        )
 
     def compose(self) -> ComposeResult:
         yield TickerBar()
@@ -120,6 +131,33 @@ class TenorTUI(App):
 
     def action_command_palette(self) -> None:
         self.query_one(CommandPalette).open()
+
+    def action_open_settings(self) -> None:
+        self._stop_auto_refresh()
+        self.push_screen(
+            SettingsScreen(self._app_config),
+            callback=self._on_settings_closed,
+        )
+
+    def _on_settings_closed(self, result: AppConfig | None) -> None:
+        if result is not None:
+            old_config = self._app_config
+            self._spread_thresholds = result.spread_thresholds
+            self._refresh_config = result.refresh
+            self._greeks_config = result.greeks
+            self._app_config = result
+            if result.fred_api_key != old_config.fred_api_key:
+                rate, is_live = get_risk_free_rate(
+                    fallback=result.greeks.risk_free_rate,
+                    fred_api_key=result.fred_api_key,
+                )
+                self._risk_free_rate = rate
+                self._risk_free_rate_is_live = is_live
+                self.query_one(StatusBar).update_rate_display(rate, is_live)
+            if self._current_symbol and self._current_expiration:
+                self._load_chain(self._current_symbol, self._current_expiration)
+        if self._auto_refresh_enabled and self._current_symbol:
+            self._start_auto_refresh()
 
     def action_toggle_auto_refresh(self) -> None:
         """Toggle auto-refresh on/off."""
@@ -203,6 +241,8 @@ class TenorTUI(App):
 
     def on_key(self, event) -> None:
         """Handle vim-style navigation keys when no input is focused."""
+        if isinstance(self.screen, SettingsScreen):
+            return
         if self._input_has_focus():
             return
 
@@ -265,6 +305,8 @@ class TenorTUI(App):
             self.exit()
         elif cmd == "help":
             self.action_help()
+        elif cmd == "settings":
+            self.action_open_settings()
         elif cmd.startswith("search ") or cmd.startswith("s "):
             parts = cmd.split(None, 1)
             if len(parts) == 2:
@@ -439,5 +481,6 @@ def main() -> None:
         greeks_config=config.greeks,
         fred_api_key=config.fred_api_key,
         refresh_config=config.refresh,
+        app_config=config,
     )
     app.run()
