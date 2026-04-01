@@ -31,6 +31,7 @@ KEYBINDINGS = [
         [
             ("?", "Toggle this help overlay"),
             (":", "Open command palette"),
+            (",", "Open settings"),
         ],
     ),
 ]

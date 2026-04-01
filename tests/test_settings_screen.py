@@ -2,6 +2,7 @@ import pytest
 from textual.app import App, ComposeResult
 from textual.widgets import Input, Static
 
+from tenortui.app import TenorTUI
 from tenortui.config import AppConfig
 from tenortui.widgets.settings_screen import SettingsScreen
 
@@ -276,3 +277,49 @@ async def test_modified_title_indicator():
         await pilot.press("enter")  # Toggle provider
         await pilot.pause()
         assert "[modified]" in title.render().plain
+
+
+# --- Integration tests with TenorTUI ---
+
+
+@pytest.fixture
+def tenor_app(fake_provider, monkeypatch):
+    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    return TenorTUI(provider=fake_provider)
+
+
+@pytest.mark.asyncio
+async def test_comma_opens_settings_from_app(tenor_app):
+    async with tenor_app.run_test() as pilot:
+        await pilot.press("comma")
+        await pilot.pause()
+        assert isinstance(tenor_app.screen, SettingsScreen)
+
+
+@pytest.mark.asyncio
+async def test_wq_saves_and_hot_applies(tenor_app, tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "tenortui.widgets.settings_screen.save_config",
+        lambda changes, **kw: None,
+    )
+    async with tenor_app.run_test() as pilot:
+        await pilot.press("comma")
+        await pilot.pause()
+        screen = tenor_app.screen
+        # Navigate to yahoo.greeks.enabled and toggle it
+        for i, row in enumerate(screen._rows):
+            if row.key == "yahoo.greeks.enabled":
+                for _ in range(i):
+                    await pilot.press("j")
+                break
+        await pilot.press("enter")  # Toggle greeks
+        await pilot.pause()
+        # :wq
+        await pilot.press("colon")
+        await pilot.pause()
+        await pilot.press(*"wq")
+        await pilot.press("enter")
+        await pilot.pause()
+        assert not isinstance(tenor_app.screen, SettingsScreen)
+        assert tenor_app._greeks_config.enabled is True
