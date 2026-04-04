@@ -8,6 +8,27 @@
 
 **Tech Stack:** Python 3.11+, Textual, Rich (Text styling), statistics (median)
 
+## Progress (as of 2026-04-04)
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Task 1: Filtering | ✅ Done | `chain_filters.py` created, 58 unit tests |
+| Task 2: Sorting | ✅ Done | `sort_contracts()` with SORT_KEYS mapping |
+| Task 3: Command Parsing | ✅ Done | `parse_filter_command()` |
+| Task 4: Visual Helpers | ✅ Done | iv_percentile_rank, delta_color, iv_color, etc. |
+| Task 5: ChainTable Integration | ✅ Done (WIP commit) | Filter/sort state, earnings warning, section labels |
+| Task 6: Visual Highlights | ✅ Done (WIP commit) | IV color, vol/OI bold, delta gradient in _populate_table |
+| Task 7: App Wiring | ✅ Done (WIP commit) | :filter commands, earnings_date passthrough |
+| Task 8: Sort Toggle | ✅ Done (WIP commit) | HeaderSelected handler, re-render on toggle |
+| Task 9: Sort Indicators | ✅ Done (WIP commit) | ▲/▼ in column headers |
+| Task 10: Final Integration | ⬜ Pending | Need spec review, code quality review, integration test, PR |
+
+**All 323 tests pass.** Tasks 5-9 were committed together as a WIP commit. Next steps:
+1. Review the WIP code for spec compliance and quality
+2. Write a final integration test
+3. Clean up the WIP commit (squash or amend)
+4. Create the PR
+
 ---
 
 ## File Structure
