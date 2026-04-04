@@ -65,6 +65,7 @@ class TenorTUI(App):
         self._current_dividend_yield: float | None = None
         self._loading_ticker: bool = False
         self._history = load_history()
+        self._current_earnings_date: str | None = None
         self._auto_refresh_enabled: bool = True
         self._auto_refresh_countdown: int = 0
         self._refresh_timer = None
@@ -307,6 +308,21 @@ class TenorTUI(App):
             self.action_help()
         elif cmd == "settings":
             self.action_open_settings()
+        elif cmd.startswith("filter ") or cmd.startswith("f "):
+            parts = cmd.split(None, 1)
+            if len(parts) == 2:
+                from tenortui.chain_filters import parse_filter_command
+
+                filter_cmd = parts[1].strip()
+                chain_table = self.query_one(ChainTable)
+                if filter_cmd.lower() == "clear":
+                    chain_table.clear_filters()
+                else:
+                    result = parse_filter_command(filter_cmd)
+                    if result is not None:
+                        chain_table.set_filters(result)
+                if self._current_symbol and self._current_expiration:
+                    self._load_chain(self._current_symbol, self._current_expiration)
         elif cmd.startswith("search ") or cmd.startswith("s "):
             parts = cmd.split(None, 1)
             if len(parts) == 2:
@@ -345,7 +361,10 @@ class TenorTUI(App):
             self._current_price = quote.price
             ticker_bar.show_quote(quote)
             self._current_dividend_yield = quote.dividend_yield
+            self._current_earnings_date = quote.earnings_date
             quote = await asyncio.to_thread(fetch_fundamentals, quote)
+            # Update earnings_date after fundamentals fetch (may populate it)
+            self._current_earnings_date = quote.earnings_date
             self.query_one(FundamentalsBar).show_fundamentals(quote)
             self._history = add_to_history(symbol)
         except SymbolNotFoundError:
@@ -384,7 +403,10 @@ class TenorTUI(App):
                         dividend_yield=self._current_dividend_yield,
                     )
                 await chain_table.display_chain(
-                    chain, self._current_price, self._spread_thresholds
+                    chain,
+                    self._current_price,
+                    self._spread_thresholds,
+                    earnings_date=self._current_earnings_date,
                 )
             else:
                 await chain_table.show_message(f"No options available for {symbol}")
@@ -422,7 +444,10 @@ class TenorTUI(App):
                     dividend_yield=self._current_dividend_yield,
                 )
             await chain_table.display_chain(
-                chain, self._current_price, self._spread_thresholds
+                chain,
+                self._current_price,
+                self._spread_thresholds,
+                earnings_date=self._current_earnings_date,
             )
         except ProviderError as e:
             await chain_table.show_message(str(e))

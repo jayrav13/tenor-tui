@@ -4,6 +4,16 @@ from textual.containers import VerticalScroll
 from textual.widget import Widget
 from textual.widgets import DataTable, Static
 
+from tenortui.chain_filters import (
+    ChainFilters,
+    compute_chain_median,
+    delta_color,
+    filter_contracts,
+    is_high_activity,
+    iv_color,
+    iv_percentile_rank,
+    sort_contracts,
+)
 from tenortui.config import SpreadThresholds
 from tenortui.models import OptionsChain
 
@@ -58,6 +68,29 @@ class ChainTable(Widget):
     }
     """
 
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._filters: ChainFilters = ChainFilters()
+        self._sort_column: str | None = None
+        self._sort_reverse: bool = False
+        self._last_chain: OptionsChain | None = None
+        self._last_price: float | None = None
+        self._last_thresholds: SpreadThresholds | None = None
+        self._last_earnings_date: str | None = None
+
+    def set_filters(self, filters: ChainFilters) -> None:
+        """Set the active chain filters."""
+        self._filters = filters
+
+    def clear_filters(self) -> None:
+        """Reset all filters to defaults."""
+        self._filters = ChainFilters()
+
+    def set_sort(self, column: str | None, reverse: bool = False) -> None:
+        """Set the sort column and direction."""
+        self._sort_column = column
+        self._sort_reverse = reverse
+
     def compose(self) -> ComposeResult:
         yield VerticalScroll()
 
@@ -72,7 +105,14 @@ class ChainTable(Widget):
         chain: OptionsChain,
         current_price: float | None = None,
         spread_thresholds: SpreadThresholds | None = None,
+        earnings_date: str | None = None,
     ) -> None:
+        # Store params for re-rendering on sort/filter change
+        self._last_chain = chain
+        self._last_price = current_price
+        self._last_thresholds = spread_thresholds
+        self._last_earnings_date = earnings_date
+
         show_greeks = any(c.has_greeks for c in chain.calls + chain.puts)
         if show_greeks and chain.greeks_calculated:
             greek_cols = [
@@ -93,16 +133,27 @@ class ChainTable(Widget):
         calls_table = DataTable()
         puts_table = DataTable()
 
-        await container.mount(Static("CALLS", classes="section-label"))
+        # Build section labels
+        calls_label = "CALLS"
+        puts_label = "PUTS"
+        if earnings_date:
+            calls_label = f"CALLS \u26a0 Earnings: {earnings_date}"
+            puts_label = f"PUTS \u26a0 Earnings: {earnings_date}"
+        if self._filters.is_active:
+            count = self._filters.active_count
+            calls_label += f" ({count} filter{'s' if count != 1 else ''})"
+            puts_label += f" ({count} filter{'s' if count != 1 else ''})"
+
+        await container.mount(Static(calls_label, classes="section-label"))
         await container.mount(calls_table)
-        await container.mount(Static("PUTS", classes="section-label"))
+        await container.mount(Static(puts_label, classes="section-label"))
         await container.mount(puts_table)
 
         calls_atm = self._populate_table(
-            calls_table, columns, chain.calls, current_price, thresholds
+            calls_table, columns, chain.calls, current_price, thresholds, side="call"
         )
         puts_atm = self._populate_table(
-            puts_table, columns, chain.puts, current_price, thresholds
+            puts_table, columns, chain.puts, current_price, thresholds, side="put"
         )
 
         # Place cursor on ATM row, then center it in the viewport after render
@@ -124,22 +175,75 @@ class ChainTable(Widget):
         return Text(f"{spread_pct:.1f}%", style=color)
 
     def _populate_table(
-        self, table, columns, contracts, current_price, thresholds
+        self, table, columns, contracts, current_price, thresholds, side: str = "call"
     ) -> int | None:
         """Populate table and return the ATM row index (or None)."""
+        # Apply filtering
+        filtered = filter_contracts(
+            contracts, self._filters, current_price=current_price, side=side
+        )
+
+        # Apply sorting
+        if self._sort_column is not None:
+            sorted_contracts = sort_contracts(
+                filtered, self._sort_column, self._sort_reverse
+            )
+        else:
+            sorted_contracts = sort_contracts(filtered, "strike", reverse=False)
+
+        # Add columns with sort indicators
         for col_name, _width in columns:
-            table.add_column(col_name, key=col_name.lower().rstrip("*"))
+            col_key = col_name.lower().rstrip("*")
+            label = col_name
+            if self._sort_column == col_key:
+                arrow = "\u25b2" if not self._sort_reverse else "\u25bc"
+                label = f"{col_name} {arrow}"
+            table.add_column(label, key=col_key)
+
+        # Compute visual highlight stats
+        all_ivs = [c.implied_volatility for c in sorted_contracts]
+        median_vol = compute_chain_median([float(c.volume) for c in sorted_contracts])
+        median_oi = compute_chain_median(
+            [float(c.open_interest) for c in sorted_contracts]
+        )
 
         atm_row_idx = None
         atm_inserted = False
         row_count = 0
-        for contract in sorted(contracts, key=lambda c: c.strike):
-            if current_price and not atm_inserted and contract.strike > current_price:
+        # Only insert ATM divider when sorted by strike (default)
+        insert_atm = self._sort_column is None
+
+        for contract in sorted_contracts:
+            if (
+                insert_atm
+                and current_price
+                and not atm_inserted
+                and contract.strike > current_price
+            ):
                 atm_row = ["── ATM ──"] + ["─" * 6] * (len(columns) - 1)
                 table.add_row(*atm_row)
                 atm_row_idx = row_count
                 row_count += 1
                 atm_inserted = True
+
+            # Build IV cell with color
+            iv_pct = iv_percentile_rank(contract.implied_volatility, all_ivs)
+            iv_cell = Text(
+                f"{contract.implied_volatility:.2%}",
+                style=iv_color(iv_pct),
+            )
+
+            # Build Vol cell with bold for high activity
+            if is_high_activity(float(contract.volume), median_vol):
+                vol_cell = Text(f"{contract.volume:,}", style="bold")
+            else:
+                vol_cell = f"{contract.volume:,}"
+
+            # Build OI cell with bold for high activity
+            if is_high_activity(float(contract.open_interest), median_oi):
+                oi_cell = Text(f"{contract.open_interest:,}", style="bold")
+            else:
+                oi_cell = f"{contract.open_interest:,}"
 
             row = [
                 f"{contract.strike:.2f}",
@@ -148,17 +252,25 @@ class ChainTable(Widget):
                 self._format_spread(contract.spread_percent, thresholds),
                 f"{contract.mid:.2f}",
                 f"{contract.last_price:.2f}",
-                f"{contract.volume:,}",
-                f"{contract.open_interest:,}",
-                f"{contract.implied_volatility:.2%}",
+                vol_cell,
+                oi_cell,
+                iv_cell,
             ]
             if any(
                 col[0].rstrip("*") in ("Delta", "Gamma", "Theta", "Vega", "Rho")
                 for col in columns
             ):
+                # Delta with color
+                if contract.delta is not None:
+                    delta_cell = Text(
+                        f"{contract.delta:.3f}",
+                        style=delta_color(contract.delta),
+                    )
+                else:
+                    delta_cell = ""
                 row.extend(
                     [
-                        f"{contract.delta:.3f}" if contract.delta is not None else "",
+                        delta_cell,
                         f"{contract.gamma:.3f}" if contract.gamma is not None else "",
                         f"{contract.theta:.3f}" if contract.theta is not None else "",
                         f"{contract.vega:.3f}" if contract.vega is not None else "",
@@ -169,6 +281,29 @@ class ChainTable(Widget):
             row_count += 1
 
         return atm_row_idx
+
+    def on_data_table_header_selected(self, event: DataTable.HeaderSelected) -> None:
+        """Toggle sort on column header click."""
+        col_key = event.column_key.value
+        if self._sort_column == col_key and not self._sort_reverse:
+            self._sort_reverse = True
+        elif self._sort_column == col_key and self._sort_reverse:
+            self._sort_column = None
+            self._sort_reverse = False
+        else:
+            self._sort_column = col_key
+            self._sort_reverse = False
+        if self._last_chain is not None:
+            import asyncio
+
+            asyncio.ensure_future(
+                self.display_chain(
+                    self._last_chain,
+                    self._last_price,
+                    self._last_thresholds,
+                    earnings_date=self._last_earnings_date,
+                )
+            )
 
     def _center_on_row(self, table: DataTable, row_idx: int) -> None:
         """Scroll so the given row is centered in the table's viewport."""
