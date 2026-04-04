@@ -3,6 +3,7 @@ of options chain data in ChainTable."""
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from tenortui.models import OptionContract
@@ -151,3 +152,54 @@ def sort_contracts(
         return (0, val)
 
     return sorted(contracts, key=_key, reverse=reverse)
+
+
+# ---------------------------------------------------------------------------
+# Task 3: Command Parsing
+# ---------------------------------------------------------------------------
+
+
+def parse_filter_command(command: str) -> ChainFilters | None:
+    """Parse a human-typed filter command into a ``ChainFilters`` instance.
+
+    Supported formats:
+    - ``volume > N``  /  ``vol > N``  → min_volume = N+1
+    - ``oi > N``                      → min_oi = N+1
+    - ``itm``  /  ``otm``             → moneyness
+    - ``delta <min> <max>``           → min_delta, max_delta
+    - ``clear``                       → returns None (clear all filters)
+    - anything else                   → returns None
+    """
+    if not command or not command.strip():
+        return None
+
+    cmd = command.strip().lower()
+
+    # Clear
+    if cmd == "clear":
+        return None
+
+    # Moneyness
+    if cmd == "itm":
+        return ChainFilters(moneyness="itm")
+    if cmd == "otm":
+        return ChainFilters(moneyness="otm")
+
+    # volume / vol > N
+    m = re.fullmatch(r"(?:volume|vol)\s*>\s*(\d+)", cmd)
+    if m:
+        threshold = int(m.group(1))
+        return ChainFilters(min_volume=threshold + 1)
+
+    # oi > N
+    m = re.fullmatch(r"oi\s*>\s*(\d+)", cmd)
+    if m:
+        threshold = int(m.group(1))
+        return ChainFilters(min_oi=threshold + 1)
+
+    # delta <min> <max>
+    m = re.fullmatch(r"delta\s+([\d.]+)\s+([\d.]+)", cmd)
+    if m:
+        return ChainFilters(min_delta=float(m.group(1)), max_delta=float(m.group(2)))
+
+    return None

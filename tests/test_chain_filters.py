@@ -1,9 +1,12 @@
 """Tests for chain_filters module: filtering, sorting, command parsing, visual helpers."""
 
+import pytest
+
 from tenortui.chain_filters import (
     ChainFilters,
     SORT_KEYS,
     filter_contracts,
+    parse_filter_command,
     sort_contracts,
 )
 from tenortui.models import OptionContract
@@ -365,3 +368,58 @@ class TestSortContracts:
             "rho",
         }
         assert expected.issubset(set(SORT_KEYS.keys()))
+
+
+# ===========================================================================
+# Task 3: TestParseFilterCommand
+# ===========================================================================
+
+
+class TestParseFilterCommand:
+    def test_volume_gt_0(self):
+        result = parse_filter_command("volume > 0")
+        assert result is not None
+        assert result.min_volume == 1
+
+    def test_volume_gt_100(self):
+        result = parse_filter_command("volume > 100")
+        assert result is not None
+        assert result.min_volume == 101
+
+    def test_vol_alias(self):
+        result = parse_filter_command("vol > 50")
+        assert result is not None
+        assert result.min_volume == 51
+
+    def test_oi_gt_100(self):
+        result = parse_filter_command("oi > 100")
+        assert result is not None
+        assert result.min_oi == 101
+
+    def test_moneyness_itm(self):
+        result = parse_filter_command("itm")
+        assert result is not None
+        assert result.moneyness == "itm"
+
+    def test_moneyness_otm(self):
+        result = parse_filter_command("otm")
+        assert result is not None
+        assert result.moneyness == "otm"
+
+    def test_delta_range(self):
+        result = parse_filter_command("delta 0.2 0.8")
+        assert result is not None
+        assert result.min_delta == pytest.approx(0.2)
+        assert result.max_delta == pytest.approx(0.8)
+
+    def test_clear_returns_none(self):
+        result = parse_filter_command("clear")
+        assert result is None
+
+    def test_invalid_returns_none(self):
+        result = parse_filter_command("foobar xyz")
+        assert result is None
+
+    def test_empty_string_returns_none(self):
+        result = parse_filter_command("")
+        assert result is None
