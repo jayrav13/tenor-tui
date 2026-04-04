@@ -108,3 +108,46 @@ def filter_contracts(
         result.append(c)
 
     return result
+
+
+# ---------------------------------------------------------------------------
+# Task 2: Sorting
+# ---------------------------------------------------------------------------
+
+# Maps user-visible column names → attribute names on OptionContract (or special keys).
+SORT_KEYS: dict[str, str] = {
+    "strike": "strike",
+    "bid": "bid",
+    "ask": "ask",
+    "spread": "spread_percent",
+    "mid": "mid",
+    "last": "last_price",
+    "vol": "volume",
+    "oi": "open_interest",
+    "iv": "implied_volatility",
+    "delta": "delta",
+    "gamma": "gamma",
+    "theta": "theta",
+    "vega": "vega",
+    "rho": "rho",
+}
+
+
+def sort_contracts(
+    contracts: list[OptionContract],
+    column: str | None,
+    reverse: bool = False,
+) -> list[OptionContract]:
+    """Sort *contracts* by *column*.  None values sort to the end.
+    If *column* is None or not recognised, fall back to strike sort."""
+    attr = SORT_KEYS.get(column or "", "strike") if column is not None else "strike"
+
+    def _key(c: OptionContract):
+        val = getattr(c, attr, None)
+        # For properties like mid/spread_percent the attribute always exists,
+        # but for optional Greek columns val can be None.
+        if val is None:
+            return (1, 0)  # sort None to end
+        return (0, val)
+
+    return sorted(contracts, key=_key, reverse=reverse)

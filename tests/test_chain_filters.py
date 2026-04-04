@@ -2,7 +2,9 @@
 
 from tenortui.chain_filters import (
     ChainFilters,
+    SORT_KEYS,
     filter_contracts,
+    sort_contracts,
 )
 from tenortui.models import OptionContract
 
@@ -224,3 +226,142 @@ class TestFilterContracts:
 
     def test_chain_filters_active_count_zero_when_empty(self):
         assert ChainFilters().active_count == 0
+
+
+# ===========================================================================
+# Task 2: TestSortContracts
+# ===========================================================================
+
+
+class TestSortContracts:
+    def test_sort_by_strike_asc(self):
+        contracts = [_make_contract(120), _make_contract(100), _make_contract(110)]
+        result = sort_contracts(contracts, "strike", reverse=False)
+        assert [c.strike for c in result] == [100, 110, 120]
+
+    def test_sort_by_strike_desc(self):
+        contracts = [_make_contract(120), _make_contract(100), _make_contract(110)]
+        result = sort_contracts(contracts, "strike", reverse=True)
+        assert [c.strike for c in result] == [120, 110, 100]
+
+    def test_sort_by_volume(self):
+        contracts = [
+            _make_contract(100, volume=300),
+            _make_contract(110, volume=100),
+            _make_contract(120, volume=200),
+        ]
+        result = sort_contracts(contracts, "vol")
+        assert [c.volume for c in result] == [100, 200, 300]
+
+    def test_sort_by_oi(self):
+        contracts = [
+            _make_contract(100, open_interest=900),
+            _make_contract(110, open_interest=100),
+            _make_contract(120, open_interest=500),
+        ]
+        result = sort_contracts(contracts, "oi")
+        assert [c.open_interest for c in result] == [100, 500, 900]
+
+    def test_sort_by_iv(self):
+        contracts = [
+            _make_contract(100, iv=0.50),
+            _make_contract(110, iv=0.20),
+            _make_contract(120, iv=0.35),
+        ]
+        result = sort_contracts(contracts, "iv")
+        assert [c.implied_volatility for c in result] == [0.20, 0.35, 0.50]
+
+    def test_sort_by_delta(self):
+        contracts = [
+            _make_contract(100, delta=0.70),
+            _make_contract(110, delta=0.30),
+            _make_contract(120, delta=0.50),
+        ]
+        result = sort_contracts(contracts, "delta")
+        assert [c.delta for c in result] == [0.30, 0.50, 0.70]
+
+    def test_none_delta_sorts_to_end(self):
+        contracts = [
+            _make_contract(100, delta=None),
+            _make_contract(110, delta=0.50),
+            _make_contract(120, delta=0.20),
+        ]
+        result = sort_contracts(contracts, "delta")
+        assert result[-1].strike == 100  # None delta goes to end
+        assert result[0].delta == 0.20
+
+    def test_none_column_defaults_to_strike_sort(self):
+        contracts = [_make_contract(120), _make_contract(100), _make_contract(110)]
+        result = sort_contracts(contracts, None)
+        assert [c.strike for c in result] == [100, 110, 120]
+
+    def test_sort_by_bid(self):
+        c1 = OptionContract(
+            contract_symbol="A",
+            option_type="call",
+            strike=100,
+            bid=3.0,
+            ask=3.5,
+            last_price=3.2,
+            volume=100,
+            open_interest=500,
+            implied_volatility=0.3,
+            delta=None,
+            gamma=None,
+            theta=None,
+            vega=None,
+            rho=None,
+        )
+        c2 = OptionContract(
+            contract_symbol="B",
+            option_type="call",
+            strike=110,
+            bid=1.0,
+            ask=1.5,
+            last_price=1.2,
+            volume=100,
+            open_interest=500,
+            implied_volatility=0.3,
+            delta=None,
+            gamma=None,
+            theta=None,
+            vega=None,
+            rho=None,
+        )
+        c3 = OptionContract(
+            contract_symbol="C",
+            option_type="call",
+            strike=120,
+            bid=2.0,
+            ask=2.5,
+            last_price=2.2,
+            volume=100,
+            open_interest=500,
+            implied_volatility=0.3,
+            delta=None,
+            gamma=None,
+            theta=None,
+            vega=None,
+            rho=None,
+        )
+        result = sort_contracts([c1, c2, c3], "bid")
+        assert [c.bid for c in result] == [1.0, 2.0, 3.0]
+
+    def test_sort_keys_has_expected_columns(self):
+        expected = {
+            "strike",
+            "bid",
+            "ask",
+            "spread",
+            "mid",
+            "last",
+            "vol",
+            "oi",
+            "iv",
+            "delta",
+            "gamma",
+            "theta",
+            "vega",
+            "rho",
+        }
+        assert expected.issubset(set(SORT_KEYS.keys()))
