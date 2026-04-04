@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from statistics import median
+from typing import Sequence
 
 from tenortui.models import OptionContract
 
@@ -203,3 +205,69 @@ def parse_filter_command(command: str) -> ChainFilters | None:
         return ChainFilters(min_delta=float(m.group(1)), max_delta=float(m.group(2)))
 
     return None
+
+
+# ---------------------------------------------------------------------------
+# Task 4: Visual Highlighting Helpers
+# ---------------------------------------------------------------------------
+
+
+def iv_percentile_rank(iv: float, all_ivs: list[float]) -> float:
+    """Return the percentile rank (0.0-1.0) of *iv* within *all_ivs*.
+
+    Returns 0.0 for empty or single-element lists.
+    """
+    if len(all_ivs) <= 1:
+        return 0.0
+    min_iv = min(all_ivs)
+    max_iv = max(all_ivs)
+    if max_iv == min_iv:
+        return 0.0
+    return (iv - min_iv) / (max_iv - min_iv)
+
+
+def compute_chain_median(values: Sequence[float]) -> float:
+    """Return the median of *values*, or 0.0 for an empty sequence."""
+    if not values:
+        return 0.0
+    return median(values)
+
+
+def is_high_activity(value: float, median_value: float) -> bool:
+    """Return True if *value* is strictly greater than twice *median_value*."""
+    return value > 2 * median_value
+
+
+def delta_color(delta: float | None) -> str:
+    """Return a Textual-compatible color name based on absolute delta magnitude.
+
+    - abs(delta) >= 0.7 -> "green"  (deep in the money)
+    - abs(delta) >= 0.3 -> "yellow" (near the money)
+    - otherwise         -> "red"    (far out of the money)
+    - None              -> ""
+    """
+    if delta is None:
+        return ""
+    abs_d = abs(delta)
+    if abs_d >= 0.7:
+        return "green"
+    if abs_d >= 0.3:
+        return "yellow"
+    return "red"
+
+
+def iv_color(percentile: float) -> str:
+    """Return a Textual-compatible color name based on IV percentile rank.
+
+    - <= 0.25 -> "cyan"        (very low IV)
+    - <= 0.50 -> "yellow"      (below-average IV)
+    - <= 0.75 -> "dark_orange" (above-average IV)
+    - >  0.75 -> "red"         (very high IV)
+    """
+    if percentile <= 0.25:
+        return "cyan"
+    if percentile <= 0.50:
+        return "yellow"
+    if percentile <= 0.75:
+        return "dark_orange"
+    return "red"

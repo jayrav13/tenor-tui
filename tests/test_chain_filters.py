@@ -5,7 +5,12 @@ import pytest
 from tenortui.chain_filters import (
     ChainFilters,
     SORT_KEYS,
+    compute_chain_median,
+    delta_color,
     filter_contracts,
+    is_high_activity,
+    iv_color,
+    iv_percentile_rank,
     parse_filter_command,
     sort_contracts,
 )
@@ -423,3 +428,96 @@ class TestParseFilterCommand:
     def test_empty_string_returns_none(self):
         result = parse_filter_command("")
         assert result is None
+
+
+# ===========================================================================
+# Task 4: TestVisualHelpers
+# ===========================================================================
+
+
+class TestVisualHelpers:
+    # iv_percentile_rank
+    def test_iv_percentile_rank_basic(self):
+        all_ivs = [0.10, 0.20, 0.30, 0.40, 0.50]
+        rank = iv_percentile_rank(0.30, all_ivs)
+        assert 0.0 <= rank <= 1.0
+
+    def test_iv_percentile_rank_min(self):
+        all_ivs = [0.10, 0.20, 0.30]
+        rank = iv_percentile_rank(0.10, all_ivs)
+        assert rank == pytest.approx(0.0)
+
+    def test_iv_percentile_rank_max(self):
+        all_ivs = [0.10, 0.20, 0.30]
+        rank = iv_percentile_rank(0.30, all_ivs)
+        assert rank == pytest.approx(1.0)
+
+    def test_iv_percentile_rank_single_element(self):
+        rank = iv_percentile_rank(0.25, [0.25])
+        assert rank == pytest.approx(0.0)
+
+    def test_iv_percentile_rank_empty_list(self):
+        rank = iv_percentile_rank(0.25, [])
+        assert rank == pytest.approx(0.0)
+
+    # compute_chain_median
+    def test_compute_chain_median_odd(self):
+        result = compute_chain_median([1, 3, 5])
+        assert result == pytest.approx(3.0)
+
+    def test_compute_chain_median_even(self):
+        result = compute_chain_median([1, 2, 3, 4])
+        assert result == pytest.approx(2.5)
+
+    def test_compute_chain_median_empty(self):
+        result = compute_chain_median([])
+        assert result == pytest.approx(0.0)
+
+    # is_high_activity
+    def test_is_high_activity_true(self):
+        assert is_high_activity(1000, 400) is True  # 1000 > 2*400
+
+    def test_is_high_activity_false(self):
+        assert is_high_activity(500, 400) is False  # 500 <= 2*400
+
+    def test_is_high_activity_boundary(self):
+        assert is_high_activity(800, 400) is False  # 800 == 2*400, not strictly greater
+
+    # delta_color
+    def test_delta_color_high(self):
+        assert delta_color(0.70) == "green"
+        assert delta_color(-0.75) == "green"  # abs(-0.75) >= 0.7
+
+    def test_delta_color_medium(self):
+        assert delta_color(0.50) == "yellow"
+        assert delta_color(-0.40) == "yellow"
+
+    def test_delta_color_low(self):
+        assert delta_color(0.10) == "red"
+        assert delta_color(-0.05) == "red"
+
+    def test_delta_color_boundary_0_7(self):
+        assert delta_color(0.70) == "green"
+
+    def test_delta_color_boundary_0_3(self):
+        assert delta_color(0.30) == "yellow"
+
+    def test_delta_color_none(self):
+        assert delta_color(None) == ""
+
+    # iv_color
+    def test_iv_color_low_percentile(self):
+        assert iv_color(0.25) == "cyan"
+        assert iv_color(0.0) == "cyan"
+
+    def test_iv_color_medium_low(self):
+        assert iv_color(0.50) == "yellow"
+        assert iv_color(0.26) == "yellow"
+
+    def test_iv_color_medium_high(self):
+        assert iv_color(0.75) == "dark_orange"
+        assert iv_color(0.51) == "dark_orange"
+
+    def test_iv_color_high(self):
+        assert iv_color(0.76) == "red"
+        assert iv_color(1.0) == "red"
