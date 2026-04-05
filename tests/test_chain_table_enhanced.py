@@ -186,8 +186,8 @@ async def test_chain_table_iv_color_applied():
 
 
 @pytest.mark.asyncio
-async def test_chain_table_high_volume_bold():
-    """Renders without error with high-volume contracts (bold applied)."""
+async def test_chain_table_high_volume_highlight():
+    """Renders without error with high-volume contracts (color tint applied)."""
     chain = _make_chain(
         calls=[
             _make_contract(100.0, volume=10),

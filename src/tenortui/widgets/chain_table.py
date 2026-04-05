@@ -17,6 +17,11 @@ from tenortui.chain_filters import (
 from tenortui.config import SpreadThresholds
 from tenortui.models import OptionsChain
 
+# Color used to tint Vol/OI cells when a contract's activity is above median.
+# Distinct from IV (cyan/yellow/orange/red) and delta (green/yellow/red) palettes
+# so high-activity highlighting reads as its own signal without clashing.
+HIGH_ACTIVITY_STYLE = "bright_blue"
+
 BASE_COLUMNS = [
     ("Strike", 10),
     ("Bid", 8),
@@ -233,15 +238,14 @@ class ChainTable(Widget):
                 style=iv_color(iv_pct),
             )
 
-            # Build Vol cell with bold for high activity
+            # Highlight high-activity Vol/OI with a subtle color tint
             if is_high_activity(float(contract.volume), median_vol):
-                vol_cell = Text(f"{contract.volume:,}", style="bold")
+                vol_cell = Text(f"{contract.volume:,}", style=HIGH_ACTIVITY_STYLE)
             else:
                 vol_cell = f"{contract.volume:,}"
 
-            # Build OI cell with bold for high activity
             if is_high_activity(float(contract.open_interest), median_oi):
-                oi_cell = Text(f"{contract.open_interest:,}", style="bold")
+                oi_cell = Text(f"{contract.open_interest:,}", style=HIGH_ACTIVITY_STYLE)
             else:
                 oi_cell = f"{contract.open_interest:,}"
 
