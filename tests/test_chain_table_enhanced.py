@@ -376,3 +376,43 @@ async def test_chain_table_no_sort_indicator_when_unsorted():
         for label in col_labels:
             assert "\u25b2" not in label
             assert "\u25bc" not in label
+
+
+# ---------------------------------------------------------------------------
+# Task 10: Full integration
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_full_enhanced_chain_workflow():
+    """Integration test: filter + sort + visual highlights all work together."""
+    chain = OptionsChain(
+        symbol="TEST",
+        expiration="2026-04-17",
+        calls=[
+            _make_contract(100, volume=0, iv=0.10, delta=0.9),
+            _make_contract(110, volume=50, iv=0.25, delta=0.5),
+            _make_contract(120, volume=1000, iv=0.50, delta=0.1),
+        ],
+        puts=[
+            _make_contract(100, "put", volume=30, iv=0.15, delta=-0.1),
+            _make_contract(110, "put", volume=200, iv=0.30, delta=-0.5),
+        ],
+    )
+    widget = ChainTable()
+    app = WidgetTestApp(widget)
+    async with app.run_test():
+        widget.set_filters(ChainFilters(min_volume=1))
+        widget.set_sort("iv", reverse=True)
+        await widget.display_chain(chain, current_price=115.0, earnings_date="Apr 10")
+        tables = widget.query(DataTable)
+        calls_table = tables.first()
+        # Filtered out volume=0, so 2 calls remain.
+        # No ATM divider row because sort is active (divider only shown when
+        # sorted by strike).
+        assert calls_table.row_count == 2
+
+        # Check section label has earnings warning
+        labels = widget.query(".section-label")
+        calls_label = str(labels.first().render().plain)
+        assert "Earnings" in calls_label

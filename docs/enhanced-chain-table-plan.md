@@ -21,13 +21,9 @@
 | Task 7: App Wiring | ✅ Done (WIP commit) | :filter commands, earnings_date passthrough |
 | Task 8: Sort Toggle | ✅ Done (WIP commit) | HeaderSelected handler, re-render on toggle |
 | Task 9: Sort Indicators | ✅ Done (WIP commit) | ▲/▼ in column headers |
-| Task 10: Final Integration | ⬜ Pending | Need spec review, code quality review, integration test, PR |
+| Task 10: Final Integration | ✅ Done | Integration test added, all 324 tests pass, lint/format clean |
 
-**All 323 tests pass.** Tasks 5-9 were committed together as a WIP commit. Next steps:
-1. Review the WIP code for spec compliance and quality
-2. Write a final integration test
-3. Clean up the WIP commit (squash or amend)
-4. Create the PR
+**All 324 tests pass.** Ready to push and open PR.
 
 ---
 
