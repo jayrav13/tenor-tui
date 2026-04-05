@@ -14,7 +14,7 @@ Using **subagent-driven development** — dispatch a fresh subagent per task wit
 
 | Task | Description | Status |
 |------|-------------|--------|
-| 1 | Watchlist data models and persistence (`watchlists.py`, `test_watchlists.py`) | DONE - committed, 8 tests passing |
+| 1 | Watchlist data models and persistence (`watchlists.py`, `test_watchlists.py`) | DONE - reviewed + hardened, 14 tests passing (commits e218467, 8cc25f8) |
 | 2 | Watchlist CRUD operations (add/remove/create/rename/delete) | TODO |
 | 3 | History migration (`migrate_from_history`) | TODO |
 | 4 | WatchlistPanel widget (replaces RecentlyViewed) | TODO |
@@ -27,10 +27,10 @@ Using **subagent-driven development** — dispatch a fresh subagent per task wit
 
 ## Notes
 
-- Task 1 was implemented and committed but has NOT been through spec compliance or code quality review yet. The next session should review Task 1 before moving to Task 2.
+- Task 1 has been through spec compliance (✅ byte-for-byte match) and code quality review. Findings addressed in commit 8cc25f8: malformed-item skip, atomic write via os.replace, active_index clamping, Literal type hints, 6 new tests.
 - The `in progress` label has been added to issue #5 on GitHub.
 - Baseline: 250 tests passing before any changes.
-- Task 1 commit: `e218467` (adds `src/tenortui/watchlists.py` and `tests/test_watchlists.py`)
+- Task 1 commits: `e218467` (initial) + `8cc25f8` (review fixes)
 
 ## Resume Instructions
 
