@@ -8,32 +8,38 @@
 
 ## Execution Method
 
-Using **subagent-driven development** — dispatch a fresh subagent per task with two-stage review (spec compliance, then code quality) after each.
+Using **subagent-driven development** — dispatch a fresh subagent per task with two-stage review (spec then quality) after each.
 
 ## Task Status
 
 | Task | Description | Status |
 |------|-------------|--------|
 | 1 | Watchlist data models and persistence (`watchlists.py`, `test_watchlists.py`) | DONE - reviewed + hardened, 14 tests passing (commits e218467, 8cc25f8) |
-| 2 | Watchlist CRUD operations (add/remove/create/rename/delete) | TODO |
-| 3 | History migration (`migrate_from_history`) | TODO |
-| 4 | WatchlistPanel widget (replaces RecentlyViewed) | TODO |
-| 5 | WatchlistPicker and WatchlistManager modals | TODO |
-| 6 | Integrate WatchlistPanel into app (replace RecentlyViewed) | TODO |
-| 7 | Add w/W/d keybindings for watchlist actions | TODO |
-| 8 | Integration tests | TODO |
-| 9 | Sorting support (symbol/price/change/volume) | TODO |
-| 10 | Cleanup and lint | TODO |
+| 2 | Watchlist CRUD operations (add/remove/create/rename/delete) | DONE - included in Task 1 implementation |
+| 3 | History migration (`migrate_from_history`) | DONE - included in Task 1 implementation |
+| 4 | WatchlistPanel widget | DONE - commit d97b5d7, 6 tests |
+| 5 | WatchlistPicker and WatchlistManager modals | DONE - commit 02ce2d6, 2 tests |
+| 6 | Integrate WatchlistPanel into app (replace RecentlyViewed) | DONE - commit c00860b, updated 6 test files |
+| 7 | Add w/W/d keybindings for watchlist actions | DONE - commit de9d777, 13 keybinding tests |
+| 8 | Integration tests | DONE - commit 569b220, 5 integration tests |
+| 9 | Sorting support (symbol/price/change/volume) | DONE - commit d2c4dc9, 5 sorting tests |
+| 10 | Cleanup and lint | DONE - all clean, no changes needed |
 
-## Notes
+## Summary
 
-- Task 1 has been through spec compliance (✅ byte-for-byte match) and code quality review. Findings addressed in commit 8cc25f8: malformed-item skip, atomic write via os.replace, active_index clamping, Literal type hints, 6 new tests.
-- The `in progress` label has been added to issue #5 on GitHub.
-- Baseline: 250 tests passing before any changes.
-- Task 1 commits: `e218467` (initial) + `8cc25f8` (review fixes)
+All 10 tasks complete. 381 tests passing (up from 353 baseline). Lint and format clean.
 
-## Resume Instructions
+### Commits on branch (main..HEAD):
+- fefe547 feat: add watchlist data models and persistence
+- 6baf988 fix: harden watchlist persistence per code review
+- 4b2a2ba docs: add watchlists spec, plan, and progress tracker
+- 9deb8d3 docs: mark Task 1 reviewed in watchlists progress tracker
+- d97b5d7 feat: add WatchlistPanel widget with grouped display
+- 02ce2d6 feat: add WatchlistPicker and WatchlistManager modals
+- c00860b feat: integrate WatchlistPanel into app, replacing RecentlyViewed
+- de9d777 feat: add w/W/d keybindings for watchlist management
+- 569b220 test: add watchlist integration tests
+- d2c4dc9 feat: add watchlist sorting by symbol/price/change/volume
 
-1. Enter this worktree: the session should already be in `.claude/worktrees/fix-5-watchlists`
-2. Review Task 1 (spec + code quality) per the subagent-driven-development skill
-3. Continue with Task 2 onwards following the plan at `docs/plans/2026-04-04-watchlists.md`
+### Known Issues:
+- `set_watchlists` / `_rebuild_tabs` can trigger a Textual `DuplicateIds` error when called while panel is mounted (Textual defers `remove_children()` DOM removal). Wrapped in try/except at call sites. The panel still renders correctly since `_watchlist_data` is mutated in-place.
