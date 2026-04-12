@@ -1,5 +1,5 @@
 """Tests to improve widget coverage — chain_table, ticker_bar,
-recently_viewed, expiry_selector, status_bar edge cases."""
+expiry_selector, status_bar edge cases."""
 
 import pytest
 from textual.app import App, ComposeResult
