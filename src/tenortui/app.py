@@ -16,7 +16,12 @@ from tenortui.config import (
     print_config_help,
 )
 from tenortui.exceptions import ConfigError, ProviderError, SymbolNotFoundError
-from tenortui.history import load_history, add_to_history
+from tenortui.watchlists import (
+    WatchlistItem,
+    add_item,
+    migrate_from_history,
+    save_watchlists,
+)
 from tenortui.market_hours import MarketState, get_market_state
 from tenortui.providers import PROVIDERS
 from tenortui.providers.yahoo import batch_quotes, fetch_fundamentals
@@ -26,7 +31,7 @@ from tenortui.widgets.fundamentals_bar import FundamentalsBar
 from tenortui.widgets.command_palette import CommandPalette
 from tenortui.widgets.expiry_selector import ExpirySelector
 from tenortui.widgets.help_overlay import HelpOverlay
-from tenortui.widgets.recently_viewed import RecentlyViewed
+from tenortui.widgets.watchlist_panel import WatchlistPanel
 from tenortui.widgets.settings_screen import SettingsScreen
 from tenortui.widgets.status_bar import StatusBar
 from tenortui.widgets.ticker_bar import TickerBar
@@ -64,7 +69,7 @@ class TenorTUI(App):
         self._current_price: float | None = None
         self._current_dividend_yield: float | None = None
         self._loading_ticker: bool = False
-        self._history = load_history()
+        self._watchlist_data = migrate_from_history()
         self._current_earnings_date: str | None = None
         self._auto_refresh_enabled: bool = True
         self._auto_refresh_countdown: int = 0
@@ -89,24 +94,28 @@ class TenorTUI(App):
         with Vertical(id="main-content"):
             yield FundamentalsBar()
             yield ExpirySelector()
-            yield RecentlyViewed(symbols=self._history)
+            yield WatchlistPanel()
             yield ChainTable()
         yield StatusBar(provider_name=self._provider.name)
         yield CommandPalette()
 
     def on_mount(self) -> None:
         chain_table = self.query_one(ChainTable)
-        recently_viewed = self.query_one(RecentlyViewed)
-        if self._history:
+        watchlist_panel = self.query_one(WatchlistPanel)
+        watchlist_panel.set_watchlists(self._watchlist_data)
+        has_items = bool(
+            self._watchlist_data.watchlists
+            and any(wl.items for wl in self._watchlist_data.watchlists)
+        )
+        if has_items:
             chain_table.display = False
-            self._fetch_recent_quotes()
+            self._fetch_watchlist_quotes()
         else:
-            recently_viewed.display = False
+            watchlist_panel.display = False
         self._update_market_display()
         self.query_one(StatusBar).update_rate_display(
             self._risk_free_rate, self._risk_free_rate_is_live
         )
-        # Update market state display every 60s
         self.set_interval(60, self._update_market_display)
 
     def on_ticker_bar_ticker_submitted(self, event: TickerBar.TickerSubmitted) -> None:
@@ -119,6 +128,19 @@ class TenorTUI(App):
         self._current_expiration = event.expiration
         if self._current_symbol and not self._loading_ticker:
             self._load_chain(self._current_symbol, event.expiration)
+
+    def on_watchlist_panel_ticker_selected(
+        self, event: WatchlistPanel.TickerSelected
+    ) -> None:
+        self._current_symbol = event.symbol
+        self._load_ticker(event.symbol)
+
+    def on_watchlist_panel_watchlist_changed(
+        self, event: WatchlistPanel.WatchlistChanged
+    ) -> None:
+        self._watchlist_data.active_index = event.index
+        save_watchlists(self._watchlist_data)
+        self._fetch_watchlist_quotes()
 
     def action_focus_search(self) -> None:
         self.query_one(TickerBar).focus_input()
@@ -214,6 +236,7 @@ class TenorTUI(App):
                 self._load_ticker(self._current_symbol)
         # Restart with potentially different interval (market state may have changed)
         if self._auto_refresh_enabled:
+            self._fetch_watchlist_quotes()
             self._start_auto_refresh()
 
     def _update_market_display(self) -> None:
@@ -330,15 +353,45 @@ class TenorTUI(App):
                 self._current_symbol = symbol
                 self._load_ticker(symbol)
 
-    @work(exclusive=True, group="recent")
-    async def _fetch_recent_quotes(self) -> None:
-        quotes = await asyncio.to_thread(batch_quotes, self._history)
-        rv = self.query_one(RecentlyViewed)
-        rv.update_quotes(quotes)
+    @work(exclusive=True, group="watchlist-quotes")
+    async def _fetch_watchlist_quotes(self) -> None:
+        wl = self._watchlist_data.watchlists[self._watchlist_data.active_index]
+        panel = self.query_one(WatchlistPanel)
+
+        # Fetch equity quotes
+        equity_symbols = list(
+            {item.symbol for item in wl.items if item.type == "equity"}
+        )
+        if equity_symbols:
+            quotes = await asyncio.to_thread(batch_quotes, equity_symbols)
+            panel.update_equity_quotes(quotes)
+
+        # Fetch contract quotes grouped by (symbol, expiration)
+        contract_groups: dict[tuple[str, str], list[WatchlistItem]] = {}
+        for item in wl.items:
+            if item.type == "option" and item.expiration:
+                key = (item.symbol, item.expiration)
+                contract_groups.setdefault(key, []).append(item)
+
+        if contract_groups:
+            from tenortui.models import OptionContract
+
+            all_contracts: dict[tuple[str, str], list[OptionContract]] = {}
+            for symbol, expiration in contract_groups:
+                try:
+                    chain = await asyncio.to_thread(
+                        self._provider.get_chain, symbol, expiration
+                    )
+                    all_contracts[(symbol, expiration)] = chain.calls + chain.puts
+                except Exception:
+                    continue
+            panel.update_contract_quotes(all_contracts)
+
+        # Focus the ListView
         from textual.widgets import ListView
 
         try:
-            rv.query_one(ListView).focus()
+            panel.query_one(ListView).focus()
         except Exception:
             pass
 
@@ -352,8 +405,7 @@ class TenorTUI(App):
         self._loading_ticker = True
         self.query_one(FundamentalsBar).hide()
 
-        recently_viewed = self.query_one(RecentlyViewed)
-        recently_viewed.display = False
+        self.query_one(WatchlistPanel).display = False
         chain_table.display = True
 
         try:
@@ -366,7 +418,9 @@ class TenorTUI(App):
             # Update earnings_date after fundamentals fetch (may populate it)
             self._current_earnings_date = quote.earnings_date
             self.query_one(FundamentalsBar).show_fundamentals(quote)
-            self._history = add_to_history(symbol)
+            item = WatchlistItem(type="equity", symbol=symbol)
+            add_item(self._watchlist_data, self._watchlist_data.active_index, item)
+            save_watchlists(self._watchlist_data)
         except SymbolNotFoundError:
             ticker_bar.show_error(f"Symbol '{symbol}' not found")
             chain_table.loading = False

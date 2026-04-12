@@ -3,6 +3,7 @@ from textual.app import App, ComposeResult
 from textual.widgets import Input, Static
 
 from tenortui.app import TenorTUI
+from tenortui.watchlists import WatchlistData, Watchlist
 from tenortui.config import AppConfig
 from tenortui.widgets.settings_screen import SettingsScreen
 
@@ -284,8 +285,11 @@ async def test_modified_title_indicator():
 
 @pytest.fixture
 def tenor_app(fake_provider, monkeypatch):
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     return TenorTUI(provider=fake_provider)
 
 

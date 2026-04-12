@@ -4,6 +4,7 @@ import pytest
 from textual.app import App
 
 from tenortui.app import TenorTUI
+from tenortui.watchlists import WatchlistData, Watchlist
 from tenortui.widgets.status_bar import StatusBar
 
 
@@ -71,7 +72,10 @@ async def test_status_bar_refresh_paused():
 @pytest.mark.asyncio
 async def test_auto_refresh_enabled_by_default(fake_provider, monkeypatch):
     """Auto-refresh is enabled by default."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
     app = TenorTUI(provider=fake_provider)
     async with app.run_test():
         assert app._auto_refresh_enabled is True
@@ -80,7 +84,10 @@ async def test_auto_refresh_enabled_by_default(fake_provider, monkeypatch):
 @pytest.mark.asyncio
 async def test_toggle_auto_refresh(fake_provider, monkeypatch):
     """Ctrl+P toggles auto-refresh on/off."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         assert app._auto_refresh_enabled is True
@@ -95,8 +102,11 @@ async def test_toggle_auto_refresh(fake_provider, monkeypatch):
 @pytest.mark.asyncio
 async def test_auto_refresh_starts_after_ticker_load(fake_provider, monkeypatch):
     """Auto-refresh timer starts after loading a ticker."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         app.action_focus_search()
@@ -111,8 +121,11 @@ async def test_auto_refresh_starts_after_ticker_load(fake_provider, monkeypatch)
 @pytest.mark.asyncio
 async def test_auto_refresh_stops_when_paused(fake_provider, monkeypatch):
     """Pausing auto-refresh stops the timers."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         app.action_focus_search()
@@ -130,7 +143,10 @@ async def test_auto_refresh_stops_when_paused(fake_provider, monkeypatch):
 
 def test_refresh_interval_varies_by_market_state(fake_provider, monkeypatch):
     """Refresh interval is different during/outside market hours."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
     app = TenorTUI(provider=fake_provider)
 
     # During regular hours
@@ -151,7 +167,10 @@ def test_refresh_interval_varies_by_market_state(fake_provider, monkeypatch):
 @pytest.mark.asyncio
 async def test_market_state_displayed_on_mount(fake_provider, monkeypatch):
     """Market state is displayed in status bar on mount."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
     app = TenorTUI(provider=fake_provider)
     async with app.run_test():
         bar = app.query_one(StatusBar)

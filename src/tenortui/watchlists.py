@@ -4,6 +4,8 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Literal
 
+from tenortui.history import load_history, DEFAULT_HISTORY_PATH
+
 DEFAULT_WATCHLISTS_PATH = Path.home() / ".config" / "tenor" / "watchlists.json"
 
 _KNOWN_ITEM_FIELDS = {"type", "symbol", "strike", "option_type", "expiration"}
@@ -73,6 +75,70 @@ def load_watchlists(path: Path = DEFAULT_WATCHLISTS_PATH) -> WatchlistData:
         watchlists=watchlists,
         active_index=raw_index,
     )
+
+
+def _items_match(a: WatchlistItem, b: WatchlistItem) -> bool:
+    if a.type != b.type or a.symbol != b.symbol:
+        return False
+    if a.type == "equity":
+        return True
+    return (
+        a.strike == b.strike
+        and a.option_type == b.option_type
+        and a.expiration == b.expiration
+    )
+
+
+def add_item(
+    data: WatchlistData, watchlist_index: int, item: WatchlistItem
+) -> WatchlistData:
+    wl = data.watchlists[watchlist_index]
+    if any(_items_match(existing, item) for existing in wl.items):
+        return data
+    wl.items.append(item)
+    return data
+
+
+def remove_item(
+    data: WatchlistData, watchlist_index: int, item_index: int
+) -> WatchlistData:
+    wl = data.watchlists[watchlist_index]
+    if 0 <= item_index < len(wl.items):
+        wl.items.pop(item_index)
+    return data
+
+
+def create_watchlist(data: WatchlistData, name: str) -> WatchlistData:
+    data.watchlists.append(Watchlist(name=name))
+    return data
+
+
+def rename_watchlist(data: WatchlistData, index: int, name: str) -> WatchlistData:
+    data.watchlists[index].name = name
+    return data
+
+
+def delete_watchlist(data: WatchlistData, index: int) -> WatchlistData:
+    if len(data.watchlists) <= 1:
+        return data
+    data.watchlists.pop(index)
+    if data.active_index >= len(data.watchlists):
+        data.active_index = len(data.watchlists) - 1
+    return data
+
+
+def migrate_from_history(
+    history_path: Path = DEFAULT_HISTORY_PATH,
+    watchlists_path: Path = DEFAULT_WATCHLISTS_PATH,
+) -> WatchlistData:
+    if watchlists_path.exists():
+        return load_watchlists(watchlists_path)
+    symbols = load_history(history_path)
+    items = [WatchlistItem(type="equity", symbol=s) for s in symbols]
+    data = WatchlistData(watchlists=[Watchlist(name="Default", items=items)])
+    if symbols:
+        save_watchlists(data, watchlists_path)
+    return data
 
 
 def save_watchlists(data: WatchlistData, path: Path = DEFAULT_WATCHLISTS_PATH) -> None:
