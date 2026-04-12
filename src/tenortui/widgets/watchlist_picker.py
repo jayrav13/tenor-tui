@@ -70,10 +70,8 @@ class WatchlistPicker(ModalScreen[int | None]):
     def compose(self) -> ComposeResult:
         with Vertical(id="picker-container"):
             yield Static("Add to Watchlist", classes="picker-title")
-            lv = ListView()
-            for wl in self._watchlist_data.watchlists:
-                lv.append(ListItem(Label(wl.name)))
-            yield lv
+            items = [ListItem(Label(wl.name)) for wl in self._watchlist_data.watchlists]
+            yield ListView(*items)
             yield Input(placeholder="New watchlist name", id="picker-new-input")
             yield Static("[n] New  [Esc] Cancel", classes="picker-footer")
 
@@ -178,7 +176,6 @@ class WatchlistManager(ModalScreen[WatchlistData | None]):
                 "[n] New  [r] Rename  [d] Delete  [Esc] Close",
                 classes="manager-footer",
             )
-        self._rebuild_list()
 
     def on_mount(self) -> None:
         self._rebuild_list()

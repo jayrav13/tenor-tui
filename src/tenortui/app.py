@@ -20,6 +20,7 @@ from tenortui.watchlists import (
     WatchlistItem,
     add_item,
     migrate_from_history,
+    remove_item,
     save_watchlists,
 )
 from tenortui.market_hours import MarketState, get_market_state
@@ -32,6 +33,7 @@ from tenortui.widgets.command_palette import CommandPalette
 from tenortui.widgets.expiry_selector import ExpirySelector
 from tenortui.widgets.help_overlay import HelpOverlay
 from tenortui.widgets.watchlist_panel import WatchlistPanel
+from tenortui.widgets.watchlist_picker import WatchlistManager, WatchlistPicker
 from tenortui.widgets.settings_screen import SettingsScreen
 from tenortui.widgets.status_bar import StatusBar
 from tenortui.widgets.ticker_bar import TickerBar
@@ -319,6 +321,120 @@ class TenorTUI(App):
         elif key == "r":
             self.action_refresh()
             event.prevent_default()
+        elif key == "w":
+            self._action_add_to_watchlist()
+            event.prevent_default()
+        elif key == "W":
+            self._action_open_watchlist_manager()
+            event.prevent_default()
+        elif key == "d":
+            self._action_remove_from_watchlist()
+            event.prevent_default()
+
+    def _action_add_to_watchlist(self) -> None:
+        from textual.widgets import DataTable
+
+        item: WatchlistItem | None = None
+
+        if isinstance(self.focused, DataTable):
+            item = self._get_contract_from_chain_table()
+        elif self._current_symbol:
+            item = WatchlistItem(type="equity", symbol=self._current_symbol)
+
+        if item is None:
+            return
+
+        self._pending_watchlist_item = item
+        self.push_screen(
+            WatchlistPicker(self._watchlist_data),
+            callback=self._on_watchlist_picked,
+        )
+
+    def _get_contract_from_chain_table(self) -> WatchlistItem | None:
+        from textual.widgets import DataTable
+
+        if not isinstance(self.focused, DataTable):
+            return None
+        table = self.focused
+        if table.cursor_row is None or table.row_count == 0:
+            return None
+
+        row_idx = table.cursor_row
+        row_data = table.get_row_at(row_idx)
+        # Skip ATM marker rows
+        if row_data and str(row_data[0]).startswith("──"):
+            return None
+
+        try:
+            strike = float(str(row_data[0]))
+        except (ValueError, IndexError):
+            return None
+
+        # Determine if this is a call or put table by checking parent labels
+        chain_table = self.query_one(ChainTable)
+        tables = chain_table.query(DataTable)
+        table_list = list(tables)
+        if len(table_list) >= 2:
+            option_type = "call" if table is table_list[0] else "put"
+        else:
+            option_type = "call"
+
+        if self._current_symbol and self._current_expiration:
+            return WatchlistItem(
+                type="option",
+                symbol=self._current_symbol,
+                strike=strike,
+                option_type=option_type,
+                expiration=self._current_expiration,
+            )
+        return None
+
+    def _on_watchlist_picked(self, result: int | None) -> None:
+        if result is None or not hasattr(self, "_pending_watchlist_item"):
+            return
+        item = self._pending_watchlist_item
+        del self._pending_watchlist_item
+        add_item(self._watchlist_data, result, item)
+        save_watchlists(self._watchlist_data)
+        try:
+            self.query_one(WatchlistPanel).set_watchlists(self._watchlist_data)
+        except Exception:
+            pass
+
+    def _action_open_watchlist_manager(self) -> None:
+        self.push_screen(
+            WatchlistManager(self._watchlist_data),
+            callback=self._on_watchlist_manager_closed,
+        )
+
+    def _on_watchlist_manager_closed(self, result) -> None:
+        if result is not None:
+            self._watchlist_data = result
+            save_watchlists(self._watchlist_data)
+            try:
+                self.query_one(WatchlistPanel).set_watchlists(self._watchlist_data)
+            except Exception:
+                pass
+            self._fetch_watchlist_quotes()
+
+    def _action_remove_from_watchlist(self) -> None:
+        from textual.widgets import ListView
+
+        panel = self.query_one(WatchlistPanel)
+        if not isinstance(self.focused, ListView):
+            return
+        # Check if the focused ListView belongs to the WatchlistPanel
+        if self.focused not in panel.query(ListView):
+            return
+        lv = self.focused
+        if lv.index is None:
+            return
+        remove_item(self._watchlist_data, self._watchlist_data.active_index, lv.index)
+        save_watchlists(self._watchlist_data)
+        try:
+            panel.set_watchlists(self._watchlist_data)
+        except Exception:
+            pass
 
     def on_command_palette_command_submitted(
         self, event: CommandPalette.CommandSubmitted
