@@ -1,6 +1,7 @@
 import pytest
 
 from tenortui.models import Quote, OptionContract, OptionsChain
+from tenortui.watchlists import WatchlistData, Watchlist, WatchlistItem
 
 
 @pytest.fixture
@@ -134,3 +135,16 @@ class FakeProvider:
 @pytest.fixture
 def fake_provider(sample_quote, sample_expirations, sample_chain):
     return FakeProvider(sample_quote, sample_expirations, sample_chain)
+
+
+@pytest.fixture
+def sample_watchlist_data():
+    return WatchlistData(
+        watchlists=[
+            Watchlist(
+                name="Default",
+                items=[WatchlistItem(type="equity", symbol="AAPL")],
+            )
+        ],
+        active_index=0,
+    )
