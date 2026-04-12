@@ -71,6 +71,8 @@ class WatchlistPanel(Widget):
             self.index = index
             super().__init__()
 
+    SORT_KEYS = [None, "symbol", "price", "change", "volume"]
+
     def __init__(self) -> None:
         super().__init__()
         self._watchlist_data: WatchlistData | None = None
@@ -78,6 +80,7 @@ class WatchlistPanel(Widget):
         self._equity_quotes: dict[str, Quote] = {}
         self._contract_quotes: dict[tuple[str, str], list[OptionContract]] = {}
         self._flat_items: list[WatchlistItem] = []
+        self._sort_key: str | None = None
 
     def compose(self) -> ComposeResult:
         yield Horizontal(classes="wl-tab-bar")
@@ -124,7 +127,7 @@ class WatchlistPanel(Widget):
         list_view.display = True
 
         self._flat_items = []
-        groups = self._build_display_groups(wl.items)
+        groups = self._build_display_groups(wl.items, sort_key=self._sort_key)
 
         for symbol, items in groups:
             for item in items:
@@ -171,7 +174,7 @@ class WatchlistPanel(Widget):
             list_view.index = 0
 
     def _build_display_groups(
-        self, items: list[WatchlistItem]
+        self, items: list[WatchlistItem], sort_key: str | None = None
     ) -> list[tuple[str, list[WatchlistItem]]]:
         groups: dict[str, list[WatchlistItem]] = {}
         order: list[str] = []
@@ -180,7 +183,44 @@ class WatchlistPanel(Widget):
                 groups[item.symbol] = []
                 order.append(item.symbol)
             groups[item.symbol].append(item)
+
+        if sort_key == "symbol":
+            order.sort()
+        elif sort_key == "price":
+            order.sort(
+                key=lambda s: (
+                    self._equity_quotes[s].price if s in self._equity_quotes else 0
+                ),
+                reverse=True,
+            )
+        elif sort_key == "change":
+            order.sort(
+                key=lambda s: (
+                    self._equity_quotes[s].change_percent
+                    if s in self._equity_quotes
+                    else 0
+                ),
+                reverse=True,
+            )
+        elif sort_key == "volume":
+            order.sort(
+                key=lambda s: (
+                    self._equity_quotes[s].volume if s in self._equity_quotes else 0
+                ),
+                reverse=True,
+            )
+
         return [(symbol, groups[symbol]) for symbol in order]
+
+    def cycle_sort(self) -> str | None:
+        current_idx = (
+            self.SORT_KEYS.index(self._sort_key)
+            if self._sort_key in self.SORT_KEYS
+            else 0
+        )
+        self._sort_key = self.SORT_KEYS[(current_idx + 1) % len(self.SORT_KEYS)]
+        self._rebuild_list()
+        return self._sort_key
 
     def _calculate_dte(self, expiration: str) -> int:
         exp_date = date.fromisoformat(expiration)
@@ -201,7 +241,9 @@ class WatchlistPanel(Widget):
         if not self._flat_items and self._watchlist_data is not None:
             wl = self._watchlist_data.watchlists[self._active_index]
             flat: list[WatchlistItem] = []
-            for _symbol, items in self._build_display_groups(wl.items):
+            for _symbol, items in self._build_display_groups(
+                wl.items, sort_key=self._sort_key
+            ):
                 flat.extend(items)
             if 0 <= index < len(flat):
                 return flat[index]

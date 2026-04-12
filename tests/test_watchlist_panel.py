@@ -112,3 +112,105 @@ class TestWatchlistPanelRemove:
         assert item is not None
         assert item.type == "option"
         assert item.strike == 180.0
+
+
+class TestWatchlistPanelSorting:
+    def test_sort_by_symbol(self):
+        panel = WatchlistPanel()
+        items = [
+            WatchlistItem(type="equity", symbol="MSFT"),
+            WatchlistItem(type="equity", symbol="AAPL"),
+            WatchlistItem(type="equity", symbol="GOOG"),
+        ]
+        groups = panel._build_display_groups(items, sort_key="symbol")
+        assert [g[0] for g in groups] == ["AAPL", "GOOG", "MSFT"]
+
+    def test_sort_by_price(self):
+        panel = WatchlistPanel()
+        panel._equity_quotes = {
+            "AAPL": Quote(
+                symbol="AAPL",
+                name="Apple",
+                price=213.0,
+                change=0,
+                change_percent=0,
+                volume=0,
+            ),
+            "MSFT": Quote(
+                symbol="MSFT",
+                name="Microsoft",
+                price=415.0,
+                change=0,
+                change_percent=0,
+                volume=0,
+            ),
+        }
+        items = [
+            WatchlistItem(type="equity", symbol="AAPL"),
+            WatchlistItem(type="equity", symbol="MSFT"),
+        ]
+        groups = panel._build_display_groups(items, sort_key="price")
+        assert [g[0] for g in groups] == ["MSFT", "AAPL"]
+
+    def test_sort_by_change(self):
+        panel = WatchlistPanel()
+        panel._equity_quotes = {
+            "AAPL": Quote(
+                symbol="AAPL",
+                name="Apple",
+                price=213.0,
+                change=5.0,
+                change_percent=2.4,
+                volume=0,
+            ),
+            "MSFT": Quote(
+                symbol="MSFT",
+                name="Microsoft",
+                price=415.0,
+                change=-2.0,
+                change_percent=-0.5,
+                volume=0,
+            ),
+        }
+        items = [
+            WatchlistItem(type="equity", symbol="MSFT"),
+            WatchlistItem(type="equity", symbol="AAPL"),
+        ]
+        groups = panel._build_display_groups(items, sort_key="change")
+        assert [g[0] for g in groups] == ["AAPL", "MSFT"]
+
+    def test_sort_by_volume(self):
+        panel = WatchlistPanel()
+        panel._equity_quotes = {
+            "AAPL": Quote(
+                symbol="AAPL",
+                name="Apple",
+                price=213.0,
+                change=0,
+                change_percent=0,
+                volume=100,
+            ),
+            "MSFT": Quote(
+                symbol="MSFT",
+                name="Microsoft",
+                price=415.0,
+                change=0,
+                change_percent=0,
+                volume=500,
+            ),
+        }
+        items = [
+            WatchlistItem(type="equity", symbol="AAPL"),
+            WatchlistItem(type="equity", symbol="MSFT"),
+        ]
+        groups = panel._build_display_groups(items, sort_key="volume")
+        assert [g[0] for g in groups] == ["MSFT", "AAPL"]
+
+    def test_default_sort_preserves_insertion_order(self):
+        panel = WatchlistPanel()
+        items = [
+            WatchlistItem(type="equity", symbol="MSFT"),
+            WatchlistItem(type="equity", symbol="AAPL"),
+        ]
+        groups = panel._build_display_groups(items)
+        assert [g[0] for g in groups] == ["MSFT", "AAPL"]

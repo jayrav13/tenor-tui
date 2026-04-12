@@ -330,6 +330,10 @@ class TenorTUI(App):
         elif key == "d":
             self._action_remove_from_watchlist()
             event.prevent_default()
+        elif key == "S":
+            panel = self.query_one(WatchlistPanel)
+            panel.cycle_sort()
+            event.prevent_default()
 
     def _action_add_to_watchlist(self) -> None:
         from textual.widgets import DataTable
