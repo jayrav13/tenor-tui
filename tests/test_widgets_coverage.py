@@ -1,5 +1,5 @@
 """Tests to improve widget coverage — chain_table, ticker_bar,
-recently_viewed, expiry_selector, status_bar edge cases."""
+expiry_selector, status_bar edge cases."""
 
 import pytest
 from textual.app import App, ComposeResult
@@ -9,7 +9,6 @@ from tenortui.models import OptionContract, OptionsChain, Quote
 from tenortui.widgets.chain_table import ChainTable
 from tenortui.widgets.fundamentals_bar import FundamentalsBar
 from tenortui.widgets.expiry_selector import ExpirySelector
-from tenortui.widgets.recently_viewed import RecentlyViewed
 from tenortui.widgets.status_bar import StatusBar
 from tenortui.widgets.ticker_bar import TickerBar
 
@@ -372,62 +371,6 @@ async def test_ticker_bar_empty_submit_ignored():
         await pilot.press("enter")
         # No message posted for whitespace-only input
         assert len(messages) == 0
-
-
-# --- RecentlyViewed ---
-
-
-@pytest.mark.asyncio
-async def test_recently_viewed_update_quotes():
-    """RecentlyViewed.update_quotes populates the list."""
-    quotes = [
-        Quote("AAPL", "Apple Inc.", 213.25, 1.42, 0.67, 54_200_000, None),
-        Quote("MSFT", "Microsoft Corp.", 415.50, -2.30, -0.55, 22_100_000, None),
-    ]
-    widget = RecentlyViewed(symbols=["AAPL", "MSFT"])
-    app = WidgetTestApp(widget)
-    async with app.run_test():
-        widget.update_quotes(quotes)
-
-
-@pytest.mark.asyncio
-async def test_recently_viewed_empty_symbols():
-    """RecentlyViewed with no symbols shows placeholder."""
-    widget = RecentlyViewed(symbols=[])
-    app = WidgetTestApp(widget)
-    async with app.run_test():
-        # Should not have a ListView
-        assert len(widget.query("ListView")) == 0
-
-
-@pytest.mark.asyncio
-async def test_recently_viewed_selection_posts_message():
-    """Selecting a recently viewed ticker posts TickerSubmitted."""
-    quotes = [
-        Quote("AAPL", "Apple Inc.", 213.25, 1.42, 0.67, 54_200_000, None),
-        Quote("MSFT", "Microsoft Corp.", 415.50, -2.30, -0.55, 22_100_000, None),
-    ]
-    widget = RecentlyViewed(symbols=["AAPL", "MSFT"])
-    app = WidgetTestApp(widget)
-    messages = []
-
-    async with app.run_test() as pilot:
-        widget.update_quotes(quotes)
-
-        # Capture posted messages
-        original_handler = getattr(app, "on_ticker_bar_ticker_submitted", None)
-        app.on_ticker_bar_ticker_submitted = lambda e: messages.append(e.symbol)
-
-        # Select the first item in the list
-        from textual.widgets import ListView
-
-        list_view = widget.query_one(ListView)
-        list_view.index = 0
-        list_view.action_select_cursor()
-        await pilot.pause()
-
-        if original_handler:
-            app.on_ticker_bar_ticker_submitted = original_handler
 
 
 # --- ExpirySelector ---

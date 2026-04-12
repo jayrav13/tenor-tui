@@ -1,14 +1,18 @@
 import pytest
 
 from tenortui.app import TenorTUI
-from tenortui.widgets.recently_viewed import RecentlyViewed
+from tenortui.watchlists import WatchlistData, Watchlist, WatchlistItem
+from tenortui.widgets.watchlist_panel import WatchlistPanel
 from tenortui.widgets.chain_table import ChainTable
 
 
 @pytest.fixture
 def app(fake_provider, monkeypatch):
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     return TenorTUI(provider=fake_provider)
 
 
@@ -45,36 +49,61 @@ async def test_focus_search(app):
 
 
 @pytest.mark.asyncio
-async def test_recently_viewed_hidden_when_no_history(fake_provider, monkeypatch):
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+async def test_watchlist_panel_hidden_when_no_items(fake_provider, monkeypatch):
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
     test_app = TenorTUI(provider=fake_provider)
     async with test_app.run_test():
-        rv = test_app.query_one(RecentlyViewed)
-        assert rv.display is False
+        wp = test_app.query_one(WatchlistPanel)
+        assert wp.display is False
 
 
 @pytest.mark.asyncio
-async def test_recently_viewed_shown_when_history_exists(fake_provider, monkeypatch):
-    monkeypatch.setattr("tenortui.app.load_history", lambda: ["AAPL", "MSFT"])
+async def test_watchlist_panel_shown_when_items_exist(fake_provider, monkeypatch):
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(
+            watchlists=[
+                Watchlist(
+                    name="Default",
+                    items=[
+                        WatchlistItem(type="equity", symbol="AAPL"),
+                        WatchlistItem(type="equity", symbol="MSFT"),
+                    ],
+                )
+            ]
+        ),
+    )
     monkeypatch.setattr("tenortui.app.batch_quotes", lambda syms: [])
     test_app = TenorTUI(provider=fake_provider)
     async with test_app.run_test():
-        rv = test_app.query_one(RecentlyViewed)
+        wp = test_app.query_one(WatchlistPanel)
         ct = test_app.query_one(ChainTable)
-        assert rv.display is True
+        assert wp.display is True
         assert ct.display is False
 
 
 @pytest.mark.asyncio
-async def test_recently_viewed_hidden_after_ticker_load(fake_provider, monkeypatch):
-    monkeypatch.setattr("tenortui.app.load_history", lambda: ["AAPL"])
+async def test_watchlist_panel_hidden_after_ticker_load(fake_provider, monkeypatch):
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(
+            watchlists=[
+                Watchlist(
+                    name="Default", items=[WatchlistItem(type="equity", symbol="AAPL")]
+                )
+            ]
+        ),
+    )
     monkeypatch.setattr("tenortui.app.batch_quotes", lambda syms: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: ["AAPL"])
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     test_app = TenorTUI(provider=fake_provider)
     async with test_app.run_test() as pilot:
         test_app.action_focus_search()
         await pilot.press(*"AAPL")
         await pilot.press("enter")
         await test_app.workers.wait_for_complete()
-        rv = test_app.query_one(RecentlyViewed)
-        assert rv.display is False
+        wp = test_app.query_one(WatchlistPanel)
+        assert wp.display is False

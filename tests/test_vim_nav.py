@@ -4,6 +4,7 @@ import pytest
 from textual.app import App, ComposeResult
 
 from tenortui.app import TenorTUI
+from tenortui.watchlists import WatchlistData, Watchlist
 from tenortui.widgets.command_palette import CommandPalette
 from tenortui.widgets.help_overlay import HelpOverlay
 from tenortui.widgets.status_bar import StatusBar
@@ -96,7 +97,10 @@ async def test_command_palette_submits_command():
 @pytest.mark.asyncio
 async def test_help_overlay_via_question_mark(fake_provider, monkeypatch):
     """Pressing ? opens the help overlay in the main app."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         app.set_focus(None)  # unfocus input
@@ -107,7 +111,10 @@ async def test_help_overlay_via_question_mark(fake_provider, monkeypatch):
 @pytest.mark.asyncio
 async def test_command_palette_via_colon(fake_provider, monkeypatch):
     """Pressing : opens the command palette in the main app."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         app.set_focus(None)  # unfocus input
@@ -119,7 +126,10 @@ async def test_command_palette_via_colon(fake_provider, monkeypatch):
 @pytest.mark.asyncio
 async def test_vim_keys_ignored_when_input_focused(fake_provider, monkeypatch):
     """j/k keys pass through to input when search is focused."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         # Focus search first (input no longer focused on launch)
@@ -134,8 +144,11 @@ async def test_vim_keys_ignored_when_input_focused(fake_provider, monkeypatch):
 @pytest.mark.asyncio
 async def test_j_k_navigation_in_chain_table(fake_provider, monkeypatch):
     """j/k moves cursor in chain table DataTable."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         app.action_focus_search()
@@ -157,8 +170,11 @@ async def test_j_k_navigation_in_chain_table(fake_provider, monkeypatch):
 @pytest.mark.asyncio
 async def test_command_palette_search(fake_provider, monkeypatch):
     """':search AAPL' loads the ticker via command palette."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         app.set_focus(None)
@@ -173,8 +189,11 @@ async def test_command_palette_search(fake_provider, monkeypatch):
 @pytest.mark.asyncio
 async def test_r_triggers_refresh(fake_provider, monkeypatch):
     """Pressing r refreshes when not in input."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         # Load ticker first

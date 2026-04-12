@@ -6,9 +6,10 @@ import pytest
 from tenortui.app import TenorTUI
 from tenortui.exceptions import ProviderError, SymbolNotFoundError
 from tenortui.models import OptionsChain
+from tenortui.watchlists import WatchlistData, Watchlist, WatchlistItem
 from tenortui.widgets.chain_table import ChainTable
 from tenortui.widgets.expiry_selector import ExpirySelector
-from tenortui.widgets.recently_viewed import RecentlyViewed
+from tenortui.widgets.watchlist_panel import WatchlistPanel
 from tenortui.widgets.status_bar import StatusBar
 from tenortui.widgets.ticker_bar import TickerBar
 
@@ -74,14 +75,20 @@ class ChainErrorProvider:
         raise ProviderError("Chain fetch failed")
 
 
+def _empty_watchlist_data():
+    return WatchlistData(watchlists=[Watchlist(name="Default")])
+
+
 # --- _load_ticker error handling ---
 
 
 @pytest.mark.asyncio
 async def test_load_ticker_symbol_not_found(monkeypatch):
     """SymbolNotFoundError shows error in ticker bar."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history", lambda: _empty_watchlist_data()
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     provider = ErrorProvider(error_type="symbol")
     app = TenorTUI(provider=provider)
     async with app.run_test() as pilot:
@@ -99,8 +106,10 @@ async def test_load_ticker_symbol_not_found(monkeypatch):
 @pytest.mark.asyncio
 async def test_load_ticker_provider_error(monkeypatch):
     """ProviderError shows error message in ticker bar."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history", lambda: _empty_watchlist_data()
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     provider = ErrorProvider(error_type="provider")
     app = TenorTUI(provider=provider)
     async with app.run_test() as pilot:
@@ -118,8 +127,10 @@ async def test_load_ticker_provider_error(monkeypatch):
 @pytest.mark.asyncio
 async def test_load_ticker_no_expirations(sample_quote, monkeypatch):
     """Ticker with no expirations shows message in chain table."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history", lambda: _empty_watchlist_data()
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     provider = NoExpirationsProvider(quote=sample_quote)
     app = TenorTUI(provider=provider)
     async with app.run_test() as pilot:
@@ -138,8 +149,10 @@ async def test_load_ticker_no_expirations(sample_quote, monkeypatch):
 @pytest.mark.asyncio
 async def test_load_ticker_expirations_error(sample_quote, monkeypatch):
     """ProviderError during expiration fetch shows error in chain table."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history", lambda: _empty_watchlist_data()
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
 
     class ExpErrorProvider:
         name = "exp-error"
@@ -171,8 +184,10 @@ async def test_load_ticker_expirations_error(sample_quote, monkeypatch):
 @pytest.mark.asyncio
 async def test_load_chain_on_expiry_selection(fake_provider, sample_chain, monkeypatch):
     """Selecting an expiry tab triggers chain load."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history", lambda: _empty_watchlist_data()
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         # Load a ticker first
@@ -190,8 +205,10 @@ async def test_load_chain_on_expiry_selection(fake_provider, sample_chain, monke
 @pytest.mark.asyncio
 async def test_load_chain_provider_error(sample_quote, sample_expirations, monkeypatch):
     """ProviderError during chain fetch shows error message."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history", lambda: _empty_watchlist_data()
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     provider = ChainErrorProvider(quote=sample_quote, expirations=sample_expirations)
     app = TenorTUI(provider=provider)
     async with app.run_test() as pilot:
@@ -210,8 +227,10 @@ async def test_load_chain_provider_error(sample_quote, sample_expirations, monke
 @pytest.mark.asyncio
 async def test_refresh_reloads_ticker(fake_provider, monkeypatch):
     """Ctrl+R refreshes the current ticker."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history", lambda: _empty_watchlist_data()
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         # Load ticker first
@@ -234,7 +253,9 @@ async def test_refresh_reloads_ticker(fake_provider, monkeypatch):
 @pytest.mark.asyncio
 async def test_refresh_without_ticker_does_nothing(fake_provider, monkeypatch):
     """Ctrl+R with no ticker loaded is a no-op."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history", lambda: _empty_watchlist_data()
+    )
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         await pilot.press("ctrl+r")
@@ -243,19 +264,32 @@ async def test_refresh_without_ticker_does_nothing(fake_provider, monkeypatch):
         assert app._current_symbol is None
 
 
-# --- _fetch_recent_quotes ---
+# --- _fetch_watchlist_quotes ---
 
 
 @pytest.mark.asyncio
-async def test_fetch_recent_quotes(sample_quote, fake_provider, monkeypatch):
-    """App with history fetches recent quotes on mount."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: ["AAPL", "MSFT"])
+async def test_fetch_watchlist_quotes(sample_quote, fake_provider, monkeypatch):
+    """App with watchlist items fetches quotes on mount."""
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(
+            watchlists=[
+                Watchlist(
+                    name="Default",
+                    items=[
+                        WatchlistItem(type="equity", symbol="AAPL"),
+                        WatchlistItem(type="equity", symbol="MSFT"),
+                    ],
+                )
+            ]
+        ),
+    )
     monkeypatch.setattr("tenortui.app.batch_quotes", lambda syms: [sample_quote])
     app = TenorTUI(provider=fake_provider)
     async with app.run_test():
         await app.workers.wait_for_complete()
-        rv = app.query_one(RecentlyViewed)
-        assert rv.display is True
+        wp = app.query_one(WatchlistPanel)
+        assert wp.display is True
 
 
 # --- Expiry tab prevents double load while loading ticker ---
@@ -264,8 +298,10 @@ async def test_fetch_recent_quotes(sample_quote, fake_provider, monkeypatch):
 @pytest.mark.asyncio
 async def test_expiry_ignored_during_ticker_load(fake_provider, monkeypatch):
     """Expiry selection during ticker load is ignored (_loading_ticker flag)."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history", lambda: _empty_watchlist_data()
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     app = TenorTUI(provider=fake_provider)
     async with app.run_test():
         # Manually set the flag to simulate mid-load
@@ -284,8 +320,10 @@ async def test_expiry_ignored_during_ticker_load(fake_provider, monkeypatch):
 @pytest.mark.asyncio
 async def test_expiry_tab_triggers_independent_chain_load(fake_provider, monkeypatch):
     """After ticker is loaded, selecting a different expiry triggers _load_chain."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history", lambda: _empty_watchlist_data()
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
     app = TenorTUI(provider=fake_provider)
     async with app.run_test() as pilot:
         # Load a ticker
@@ -311,8 +349,10 @@ async def test_chain_load_error_on_expiry_switch(
     sample_quote, sample_expirations, monkeypatch
 ):
     """ProviderError on _load_chain (independent of _load_ticker) is handled."""
-    monkeypatch.setattr("tenortui.app.load_history", lambda: [])
-    monkeypatch.setattr("tenortui.app.add_to_history", lambda sym: [sym])
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history", lambda: _empty_watchlist_data()
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
 
     # Provider that works for first chain but fails on second
     call_count = {"chain": 0}

@@ -34,6 +34,15 @@ KEYBINDINGS = [
             (",", "Open settings"),
         ],
     ),
+    (
+        "Watchlists",
+        [
+            ("w", "Add ticker/contract to watchlist"),
+            ("W", "Open watchlist manager"),
+            ("d", "Remove item from watchlist"),
+            ("S", "Cycle sort order (default/symbol/price/change/volume)"),
+        ],
+    ),
 ]
 
 
