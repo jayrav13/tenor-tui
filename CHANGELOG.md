@@ -35,3 +35,8 @@ versioned section at release time.
 - `bin/check-version-bump` — CI gate that requires every PR to add a
   CHANGELOG `[Unreleased]` entry, or bump the version with a matching
   `[<version>]` section. Dependabot exempt.
+- `.github/workflows/release.yml` — auto-publishes to PyPI via Trusted
+  Publishing (OIDC) on merges that bump the version, then tags and creates
+  a GitHub Release with the wheel + sdist attached.
+- `bin/changelog-section` — extracts a `## [<version>]` section's body for
+  use as GitHub Release notes.
