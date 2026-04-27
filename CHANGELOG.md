@@ -3,17 +3,19 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project will adhere to [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
-once the first PyPI release ships.
-
-Until then, entries land under `[Unreleased]` and roll into the first
-versioned section at release time.
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-04-27
+
+First public PyPI release. Marks TenorTUI as a stable shipped product.
+
 ### Added
 
-- MkDocs Material documentation site at `docs/site/`, deployed to GitHub
+- **PyPI distribution.** `pip install tenor-tui` (or `pipx install`) works
+  from PyPI.
+- **MkDocs Material documentation site** at `docs/site/`, deployed to GitHub
   Pages on every merge to `main` (`.github/workflows/docs.yml`). Live at
   <https://jayravaliya.com/tenor-tui/>.
 - `FixtureProvider` (`--provider fixture`) returning deterministic data for
