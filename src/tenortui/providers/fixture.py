@@ -3,6 +3,8 @@
 Returns frozen data so SVGs and GIFs regenerate identically across runs.
 """
 
+from dataclasses import replace
+
 from tenortui.models import OptionContract, OptionsChain, Quote
 
 
@@ -85,7 +87,9 @@ class FixtureProvider:
 
     def get_quote(self, symbol: str) -> Quote:
         if symbol.upper() == "AAPL":
-            return _AAPL_QUOTE
+            # Defensive copy: app code mutates Quote in place (e.g. fetch_fundamentals
+            # in yahoo.py) and would corrupt the module-level singleton across runs.
+            return replace(_AAPL_QUOTE)
         return Quote(
             symbol=symbol.upper(),
             name=f"{symbol.upper()} Demo Inc.",
@@ -98,7 +102,7 @@ class FixtureProvider:
 
     def get_expirations(self, symbol: str) -> list[str]:
         if symbol.upper() == "AAPL":
-            return _AAPL_EXPIRATIONS
+            return list(_AAPL_EXPIRATIONS)
         return ["2026-05-15"]
 
     def get_chain(self, symbol: str, expiration: str) -> OptionsChain:
