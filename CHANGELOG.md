@@ -40,3 +40,9 @@ versioned section at release time.
   a GitHub Release with the wheel + sdist attached.
 - `bin/changelog-section` — extracts a `## [<version>]` section's body for
   use as GitHub Release notes.
+
+### Changed
+
+- README rewritten as a developer/install/contribute landing (under 80 lines,
+  badges + install + dev workflow + contribute). Feature walkthroughs now
+  live on the docs site.
