@@ -29,3 +29,9 @@ versioned section at release time.
 - `docs-build` CI job runs `mkdocs build --strict` on every PR.
 - `CLAUDE.md` Documentation Sync section: every change must update its
   relevant doc surface in the same PR.
+- Full PyPI metadata in `pyproject.toml` (license, authors, URLs, classifiers,
+  keywords) — wheel passes `twine check`.
+- MIT `LICENSE` file at the repo root.
+- `bin/check-version-bump` — CI gate that requires every PR to add a
+  CHANGELOG `[Unreleased]` entry, or bump the version with a matching
+  `[<version>]` section. Dependabot exempt.

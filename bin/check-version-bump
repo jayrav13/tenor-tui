@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""Verify a PR includes either a CHANGELOG entry or a version bump.
+
+Designed to run in GitHub Actions on PRs targeting `main`.
+
+Pass conditions (any one):
+  1. PR author is dependabot[bot] (GITHUB_ACTOR env var)
+  2. CHANGELOG.md `[Unreleased]` section has new non-header content vs main
+  3. pyproject.toml version was bumped AND CHANGELOG has a matching `[<version>]`
+     section with content
+
+Fail otherwise. The error message tells the contributor what to do.
+
+Usage:
+  bin/check-version-bump                 # compare HEAD against origin/main
+  bin/check-version-bump --base origin/feature-branch  # custom base
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+PYPROJECT = REPO_ROOT / "pyproject.toml"
+CHANGELOG = REPO_ROOT / "CHANGELOG.md"
+
+VERSION_RE = re.compile(r'^version\s*=\s*"([^"]+)"', re.MULTILINE)
+SECTION_RE = re.compile(r"^## \[([^\]]+)\]", re.MULTILINE)
+
+
+def _git(*args: str) -> str:
+    result = subprocess.run(
+        ["git", *args],
+        cwd=REPO_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout
+
+
+def _file_at(ref: str, path: str) -> str:
+    """Return the contents of `path` at `ref`, or '' if it doesn't exist there."""
+    try:
+        return subprocess.run(
+            ["git", "show", f"{ref}:{path}"],
+            cwd=REPO_ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+    except subprocess.CalledProcessError:
+        return ""
+
+
+def _version(text: str) -> str | None:
+    match = VERSION_RE.search(text)
+    return match.group(1) if match else None
+
+
+def _section_body(changelog: str, section: str) -> str:
+    """Return the body of `## [<section>]` until the next `## [` heading."""
+    lines = changelog.splitlines()
+    in_section = False
+    body_lines: list[str] = []
+    for line in lines:
+        match = SECTION_RE.match(line)
+        if match:
+            if match.group(1) == section:
+                in_section = True
+                continue
+            if in_section:
+                break
+        elif in_section:
+            body_lines.append(line)
+    return "\n".join(body_lines).strip()
+
+
+def _has_content(body: str) -> bool:
+    """A section has 'content' if any non-blank line isn't a sub-heading."""
+    for line in body.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("###"):
+            continue
+        return True
+    return False
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--base",
+        default="origin/main",
+        help="Git ref to compare against (default: origin/main)",
+    )
+    args = parser.parse_args()
+
+    if os.environ.get("GITHUB_ACTOR") == "dependabot[bot]":
+        print("Skipping: PR author is dependabot[bot]")
+        return 0
+
+    base_pyproject = _file_at(args.base, "pyproject.toml")
+    head_pyproject = PYPROJECT.read_text(encoding="utf-8")
+    base_version = _version(base_pyproject)
+    head_version = _version(head_pyproject)
+
+    if head_version is None:
+        print("ERROR: could not parse version from pyproject.toml", file=sys.stderr)
+        return 1
+
+    head_changelog = CHANGELOG.read_text(encoding="utf-8") if CHANGELOG.exists() else ""
+
+    version_bumped = base_version is not None and head_version != base_version
+
+    if version_bumped:
+        body = _section_body(head_changelog, head_version)
+        if not _has_content(body):
+            print(
+                f"ERROR: pyproject.toml version was bumped to {head_version}, "
+                f"but CHANGELOG.md has no '## [{head_version}]' section with "
+                f"content.\n\n"
+                f"Add a '## [{head_version}] - YYYY-MM-DD' section to CHANGELOG.md "
+                f"summarizing what's in this release.",
+                file=sys.stderr,
+            )
+            return 1
+        print(
+            f"OK: version bumped to {head_version}, CHANGELOG has matching "
+            f"[{head_version}] section."
+        )
+        return 0
+
+    base_unreleased = _section_body(_file_at(args.base, "CHANGELOG.md"), "Unreleased")
+    head_unreleased = _section_body(head_changelog, "Unreleased")
+
+    if head_unreleased == base_unreleased:
+        print(
+            "ERROR: this PR adds no entry to CHANGELOG.md '[Unreleased]'.\n\n"
+            "Add a one-line bullet under '## [Unreleased]' describing the "
+            "change. See CLAUDE.md 'Documentation Sync' for which docs need "
+            "updating in the same PR.",
+            file=sys.stderr,
+        )
+        return 1
+
+    print("OK: CHANGELOG.md [Unreleased] has new content vs main.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

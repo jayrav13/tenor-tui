@@ -94,3 +94,21 @@ jobs:
 
       - name: Build docs (strict)
         run: cd docs/site && poetry run mkdocs build --strict
+
+  check-version-bump:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Run version-bump / changelog check
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: python bin/check-version-bump --base "origin/$BASE_REF"
