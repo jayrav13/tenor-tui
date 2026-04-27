@@ -1,8 +1,8 @@
 # TenorTUI
 
-[![PyPI](https://img.shields.io/pypi/v/tenor-tui.svg)](https://pypi.org/project/tenor-tui/)
+[![PyPI](https://img.shields.io/pypi/v/tenor-tui.svg?v=1)](https://pypi.org/project/tenor-tui/)
 [![CI](https://github.com/jayrav13/tenor-tui/actions/workflows/ci.yml/badge.svg)](https://github.com/jayrav13/tenor-tui/actions/workflows/ci.yml)
-[![Python](https://img.shields.io/pypi/pyversions/tenor-tui.svg)](https://pypi.org/project/tenor-tui/)
+[![Python](https://img.shields.io/pypi/pyversions/tenor-tui.svg?v=1)](https://pypi.org/project/tenor-tui/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A terminal UI for browsing stock options chains. Live quotes, full options
