@@ -3,7 +3,30 @@ name = "tenor-tui"
 version = "0.1.0"
 description = "A terminal UI for browsing stock options chains"
 readme = "README.md"
+license = "MIT"
+authors = ["Jay Ravaliya <jayrav13@gmail.com>"]
+homepage = "https://jayravaliya.com/tenor-tui/"
+repository = "https://github.com/jayrav13/tenor-tui"
+documentation = "https://jayravaliya.com/tenor-tui/"
+keywords = ["options", "stocks", "tui", "terminal", "trading", "finance", "textual"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console :: Curses",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
 packages = [{include = "tenortui", from = "src"}]
+
+[tool.poetry.urls]
+Issues = "https://github.com/jayrav13/tenor-tui/issues"
+Changelog = "https://github.com/jayrav13/tenor-tui/blob/main/CHANGELOG.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
