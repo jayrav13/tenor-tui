@@ -11,9 +11,24 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import re
 import sys
 from pathlib import Path
 from typing import Awaitable, Callable
+
+# Textual injects a per-run hash into SVG CSS class names (e.g.
+# terminal-3656542423-matrix). The status bar also shows wall-clock "Last:
+# HH:MM:SS". Both vary between runs even when the visible app state is
+# otherwise identical — strip them so committed SVGs are byte-stable.
+_TEXTUAL_HASH = re.compile(r"terminal-\d+-")
+_LAST_TIMESTAMP = re.compile(r"Last:&#160;\d{2}:\d{2}:\d{2}")
+
+
+def _normalize(svg: str) -> str:
+    svg = _TEXTUAL_HASH.sub("terminal-static-", svg)
+    svg = _LAST_TIMESTAMP.sub("Last:&#160;00:00:00", svg)
+    return svg
+
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
@@ -95,6 +110,7 @@ async def _run_snapshot(name: str, fn: SnapshotFn) -> Path:
     app = TenorTUI(provider=FixtureProvider())
     async with app.run_test(size=(140, 40)) as pilot:
         svg = await fn(pilot)
+    svg = _normalize(svg)
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     path = OUTPUT_DIR / f"{name}.svg"
     path.write_text(svg, encoding="utf-8")
