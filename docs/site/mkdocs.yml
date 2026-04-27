@@ -1,0 +1,57 @@
+site_name: TenorTUI
+site_description: A terminal UI for browsing stock options chains
+site_url: https://jayravaliya.com/tenor-tui/
+site_author: Jay Ravaliya
+
+repo_name: jayrav13/tenor-tui
+repo_url: https://github.com/jayrav13/tenor-tui
+edit_uri: edit/main/docs/site/docs/
+
+docs_dir: docs
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.instant
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Installation: installation.md
+  - Quickstart: quickstart.md
+  - Features:
+      - Options chain: features/options-chain.md
+      - Watchlists: features/watchlists.md
+      - Providers: features/providers.md
+      - Keybindings: features/keybindings.md
+  - Configuration: configuration.md
+  - Contributing: contributing.md
