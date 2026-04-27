@@ -53,3 +53,10 @@ def test_get_chain_includes_atm_strike():
 def test_get_chain_unknown_expiration_raises():
     with pytest.raises(ValueError):
         FixtureProvider().get_chain("AAPL", "1999-01-01")
+
+
+def test_fixture_provider_registered():
+    from tenortui.providers import PROVIDERS
+
+    assert "fixture" in PROVIDERS
+    assert PROVIDERS["fixture"] is FixtureProvider
