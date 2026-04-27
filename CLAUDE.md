@@ -2,6 +2,48 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Documentation Sync
+
+Any change that affects public behavior, configuration, dependencies, or the
+release process **must** update every relevant doc surface **in the same PR**.
+Docs that go stale silently are worse than docs that are missing — readers
+learn not to trust them.
+
+### Which doc owns which kind of change
+
+| Change | Update |
+|---|---|
+| New or changed CLI flag (e.g. `tenortui --foo`) | `README.md`, `docs/site/docs/installation.md` or `quickstart.md`, `CHANGELOG.md` |
+| New or changed config option (`config.yaml`) | `src/tenortui/config.py` `CONFIG_OPTIONS` registry, `docs/site/docs/configuration.md`, `CHANGELOG.md` |
+| New keybinding | `docs/site/docs/features/keybindings.md`, the relevant feature page, `CHANGELOG.md` |
+| New widget or visible UI flow | `docs/site/docs/features/<area>.md`, regenerate affected snapshots/tapes (`make snapshots && make demos`), `CHANGELOG.md` |
+| New or changed provider capability | `docs/site/docs/features/providers.md` capability matrix, `CHANGELOG.md` |
+| New or changed `DataProvider` protocol method | `CLAUDE.md` Architecture section, `docs/site/docs/features/providers.md`, `CHANGELOG.md` |
+| New `bin/` script | `README.md` Develop section, `CLAUDE.md` Commands section, `CHANGELOG.md` |
+| Dependency add / remove / version bump | `pyproject.toml`, `CHANGELOG.md` if user-visible |
+| CI workflow change | `.github/workflows/ci.yml`, `README.md` if it changes the user-facing flow |
+| Docs deploy workflow change | `.github/workflows/docs.yml`, this `CLAUDE.md` if the process changes |
+| Docs site IA / theme change | `docs/site/mkdocs.yml`, this `CLAUDE.md` if the IA shifts |
+| Git workflow change (issue / branch / commit conventions) | `CLAUDE.md` Git Workflow section |
+| Refactor / internal cleanup with no behavior change | None — but call that out in the PR description so it's intentional |
+
+If a change clearly touches multiple categories, all of them apply.
+
+## Docs site
+
+The MkDocs Material site renders at <https://jayravaliya.com/tenor-tui/> — not
+the github.io URL. The shared-domain routing rules across sibling Pages-enabled
+repos under `jayrav13/*` are documented at:
+<https://github.com/jayrav13/jayrav13.github.io/blob/main/CLAUDE.md>.
+
+When this repo enables a new top-level path or renames itself, that registry
+must be updated.
+
+The site sources live under `docs/site/`. Build locally with `make docs-serve`;
+regenerate the SVG snapshots and VHS demo GIFs with `make snapshots` and
+`make demos`. CI runs `mkdocs build --strict` on every PR (the `docs-build`
+job in `ci.yml`) to catch broken links and missing assets.
+
 ## Commands
 
 ```bash
