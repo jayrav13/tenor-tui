@@ -28,19 +28,66 @@ OUTPUT_DIR = REPO_ROOT / "docs" / "site" / "docs" / "assets" / "snapshots"
 SnapshotFn = Callable[["object"], Awaitable[str]]
 
 
-async def hero(pilot) -> str:
-    """Chain table loaded for AAPL — the headline visual."""
+async def _load_aapl(pilot) -> None:
+    """Type AAPL into the search bar and wait for the chain to load."""
     await pilot.press("slash")
     await pilot.pause(delay=0.2)
     await pilot.press("a", "a", "p", "l")
     await pilot.pause(delay=0.2)
     await pilot.press("enter")
     await pilot.pause(delay=2.0)
+
+
+async def hero(pilot) -> str:
+    """Chain table loaded for AAPL — the headline visual."""
+    await _load_aapl(pilot)
     return pilot.app.export_screenshot(title="TenorTUI — AAPL options chain")
+
+
+async def chain(pilot) -> str:
+    """Same as hero, framed for the options-chain feature page."""
+    await _load_aapl(pilot)
+    return pilot.app.export_screenshot(title="TenorTUI — Options chain")
+
+
+async def quote_bar(pilot) -> str:
+    """Just-loaded ticker showing the quote bar prominently."""
+    await _load_aapl(pilot)
+    return pilot.app.export_screenshot(title="TenorTUI — Quote bar")
+
+
+async def watchlist_modal(pilot) -> str:
+    """Watchlist picker modal open."""
+    await _load_aapl(pilot)
+    # Defocus the search input so the app's on_key handler will respond to "w"
+    pilot.app.set_focus(None)
+    await pilot.pause(delay=0.2)
+    await pilot.press("w")
+    await pilot.pause(delay=0.5)
+    return pilot.app.export_screenshot(title="TenorTUI — Watchlist picker")
+
+
+async def expiry_tabs(pilot) -> str:
+    """Expiry tabs visible with a non-default expiry selected."""
+    from textual.widgets import TabbedContent
+
+    await _load_aapl(pilot)
+    # Switch to the second expiry programmatically (keyboard nav requires
+    # focusing the Tabs widget, which is brittle in headless tests).
+    tabbed = pilot.app.query_one(TabbedContent)
+    panes = list(tabbed.query("TabPane"))
+    if len(panes) >= 2 and panes[1].id is not None:
+        tabbed.active = panes[1].id
+        await pilot.pause(delay=1.5)
+    return pilot.app.export_screenshot(title="TenorTUI — Expiry tabs")
 
 
 SNAPSHOTS: dict[str, SnapshotFn] = {
     "hero": hero,
+    "chain": chain,
+    "quote-bar": quote_bar,
+    "watchlist-modal": watchlist_modal,
+    "expiry-tabs": expiry_tabs,
 }
 
 
