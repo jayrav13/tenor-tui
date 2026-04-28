@@ -111,6 +111,8 @@ async def test_enter_toggles_boolean():
 
 @pytest.mark.asyncio
 async def test_enter_cycles_provider():
+    from tenortui.config import KNOWN_PROVIDERS
+
     app = SettingsApp()
     async with app.run_test() as pilot:
         await pilot.press("comma")
@@ -118,9 +120,11 @@ async def test_enter_cycles_provider():
         screen = app.screen
         assert screen._rows[0].key == "default"
         assert screen._rows[0].current_value == "yahoo"
+        ordered = sorted(KNOWN_PROVIDERS)
+        next_provider = ordered[(ordered.index("yahoo") + 1) % len(ordered)]
         await pilot.press("enter")
         await pilot.pause()
-        assert screen._rows[0].current_value == "tradier"
+        assert screen._rows[0].current_value == next_provider
 
 
 @pytest.mark.asyncio
