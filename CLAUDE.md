@@ -44,6 +44,39 @@ regenerate the SVG snapshots and VHS demo GIFs with `make snapshots` and
 `make demos`. CI runs `mkdocs build --strict` on every PR (the `docs-build`
 job in `ci.yml`) to catch broken links and missing assets.
 
+### Pages source config
+
+GitHub Pages **must** be configured to serve from `gh-pages` branch, root path
+(`/`) — not `/docs`. The `docs.yml` workflow runs `mkdocs gh-deploy`, which
+writes the built site (with `.nojekyll`) to the *root* of `gh-pages`. If the
+Pages source path is `/docs`, the separate `pages-build-deployment` workflow
+fails with `dir_chdir0 - /github/workspace/docs` and Pages silently keeps
+serving the previously-published artifact — making the live site look merely
+"stale" rather than broken.
+
+If the live site doesn't reflect a recent merge:
+
+```bash
+# 1. Verify Pages source config
+gh api repos/jayrav13/tenor-tui/pages --jq '{status, source}'
+# Expected: source.branch == "gh-pages", source.path == "/"
+
+# 2. Check the latest Pages build (separate from the docs.yml run)
+gh api repos/jayrav13/tenor-tui/pages/builds/latest \
+  --jq '{status, error, duration, commit}'
+
+# 3. Compare gh-pages content vs what's served
+git ls-tree -l origin/gh-pages <path-to-asset>     # what was deployed
+curl -sI https://jayravaliya.com/tenor-tui/<path>   # what's live
+```
+
+To repair the source config:
+
+```bash
+gh api -X PUT repos/jayrav13/tenor-tui/pages \
+  -f "source[branch]=gh-pages" -f "source[path]=/"
+```
+
 ## Commands
 
 ```bash
