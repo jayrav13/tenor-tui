@@ -1,12 +1,14 @@
 import pytest
 
 from tenortui.config import (
+    KNOWN_PROVIDERS,
     RefreshConfig,
     SpreadThresholds,
     load_config,
     resolve_config_path,
 )
 from tenortui.exceptions import ConfigError
+from tenortui.providers import PROVIDERS
 
 
 class TestLoadConfig:
@@ -51,6 +53,25 @@ class TestLoadConfig:
         rc.write_text("---\ndefault: nonexistent\n")
         with pytest.raises(ConfigError, match="Unknown provider"):
             load_config(config_path=rc)
+
+    def test_known_providers_match_registry(self):
+        # Regression for #53: argparse reads --provider choices from
+        # PROVIDERS, but load_config validated against a hardcoded set,
+        # so adding a provider to the registry without updating the set
+        # caused `--provider <new>` to be accepted by argparse but
+        # rejected at runtime ("Unknown provider"). Single source of
+        # truth keeps these in sync.
+        assert KNOWN_PROVIDERS == frozenset(PROVIDERS.keys())
+
+    @pytest.mark.parametrize("provider_name", sorted(PROVIDERS.keys()))
+    def test_provider_override_accepts_every_registered_provider(
+        self, tmp_path, provider_name
+    ):
+        config = load_config(
+            config_path=tmp_path / "nonexistent",
+            provider_override=provider_name,
+        )
+        assert config.provider_name == provider_name
 
     def test_tradier_missing_api_key_raises_config_error(self, tmp_path):
         rc = tmp_path / ".tenorrc"

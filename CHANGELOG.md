@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `--provider fixture` was accepted by argparse but rejected at runtime with
+  "Unknown provider 'fixture'". `KNOWN_PROVIDERS` was hardcoded to
+  `{"yahoo", "tradier"}` and drifted from the `PROVIDERS` registry. It now
+  derives from `PROVIDERS.keys()` so the two stay in sync. Also re-recorded
+  the demo GIFs that were broken by this bug (#53).
 - README PyPI/Python badges showed "package or version not found" because
   shields.io's CDN cached a 404 from before 1.0.0 was published. Added
   `?v=1` query string to bust the cache.

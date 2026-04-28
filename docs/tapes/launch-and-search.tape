@@ -1,6 +1,9 @@
 Source docs/tapes/_common.tape
 Output docs/site/docs/assets/demos/launch-and-search.gif
 
+# Use --provider fixture: deterministic offline data, no API keys, no network.
+# Required for reproducible recordings. If you change this, regenerate all demo
+# GIFs together (`make demos`) so they stay consistent.
 Hide
 Type "poetry run tenortui --provider fixture"
 Enter

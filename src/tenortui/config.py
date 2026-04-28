@@ -4,8 +4,9 @@ from pathlib import Path
 import yaml
 
 from tenortui.exceptions import ConfigError
+from tenortui.providers import PROVIDERS
 
-KNOWN_PROVIDERS = {"yahoo", "tradier"}
+KNOWN_PROVIDERS = frozenset(PROVIDERS.keys())
 DEFAULT_CONFIG_PATH = Path.home() / ".config" / "tenor" / "config.yaml"
 LEGACY_CONFIG_PATH = Path.home() / ".tenorrc"
 
