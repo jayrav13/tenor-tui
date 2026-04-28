@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Documentation
+
+- `CLAUDE.md` now documents the GitHub Pages source-path requirement
+  (`gh-pages` branch, root path `/`) and the diagnostic flow when the live
+  site looks stale, after the silent-deploy trap surfaced during #53 (#55).
+
 ### Fixed
 
 - `--provider fixture` was accepted by argparse but rejected at runtime with
