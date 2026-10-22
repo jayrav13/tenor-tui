@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Pressing `d` in the watchlist panel could delete a different item from the
+  highlighted one (and save that deletion) whenever the display order differed
+  from insertion order, i.e. when items were grouped by symbol or re-sorted
+  with `S`. It now removes exactly the highlighted row's item (#64).
 - `--provider fixture` was accepted by argparse but rejected at runtime with
   "Unknown provider 'fixture'". `KNOWN_PROVIDERS` was hardcoded to
   `{"yahoo", "tradier"}` and drifted from the `PROVIDERS` registry. It now
