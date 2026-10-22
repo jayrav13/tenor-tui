@@ -367,6 +367,7 @@ class SettingsScreen(Screen):
         if row and row.is_editing:
             row.cancel_edit()
             return
+        self._try_quit()
 
     def action_open_command(self) -> None:
         row = self._current_row

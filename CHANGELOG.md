@@ -30,6 +30,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the yield was read before fundamentals were fetched, so Greeks always used
   `q=0`; the fundamentals yield is now used. The fundamentals bar still shows
   `Div: 0.42%` (#63).
+- Pressing `d` in the watchlist panel could delete a different item from the
+  highlighted one (and save that deletion) whenever the display order differed
+  from insertion order, i.e. when items were grouped by symbol or re-sorted
+  with `S`. It now removes exactly the highlighted row's item (#64).
+- `Esc` in the settings screen now closes it when nothing is being
+  edited, matching the documented modal behavior. With unsaved changes it
+  shows the `:q! / :wq` warning instead of closing; in an inline edit or the
+  command bar it still only cancels that (#68).
 - Viewing a ticker no longer adds it to the active watchlist. Browsing used
   to append every loaded symbol with no cap, so curated lists filled up with
   everything you had looked at. Watchlists now change only when you press
