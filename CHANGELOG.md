@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `time_to_next_state()` on Friday at or after 8:00 PM ET now counts down to
+  Monday 4:00 AM pre-market instead of Saturday 4:00 AM, when the market is
+  still closed (#58).
 - Pressing `d` in the watchlist panel could delete a different item from the
   highlighted one (and save that deletion) whenever the display order differed
   from insertion order, i.e. when items were grouped by symbol or re-sorted

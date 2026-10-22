@@ -80,8 +80,9 @@ def time_to_next_state(dt: datetime | None = None) -> int:
             days_until_monday = 7 - dt.weekday()
             return (days_until_monday * 24 * 60) - mins + PRE_MARKET_OPEN
         elif mins >= AFTER_HOURS_CLOSE:
-            # After 8 PM, next day pre-market
-            return (24 * 60 - mins) + PRE_MARKET_OPEN
+            # After 8 PM, next weekday pre-market (Friday skips to Monday)
+            extra_days = 2 if dt.weekday() == 4 else 0
+            return (24 * 60 - mins) + extra_days * 24 * 60 + PRE_MARKET_OPEN
         else:
             # Before 4 AM
             return PRE_MARKET_OPEN - mins
