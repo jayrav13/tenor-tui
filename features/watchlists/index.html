@@ -875,8 +875,12 @@ current symbol (or the highlighted contract) to a list.</p>
 <td>Open the watchlist manager (create / rename / delete lists)</td>
 </tr>
 <tr>
+<td><kbd>b</kbd></td>
+<td>Back to the watchlist panel from the chain (also <code>:watchlist</code> / <code>:wl</code>)</td>
+</tr>
+<tr>
 <td><kbd>d</kbd></td>
-<td>Delete the highlighted row (ticker or contract) from its list, whatever the current grouping or sort order</td>
+<td>Delete the highlighted row (ticker or contract) from its list, whatever the current grouping or sort order (only while the panel is shown)</td>
 </tr>
 <tr>
 <td><kbd>S</kbd></td>
@@ -884,6 +888,10 @@ current symbol (or the highlighted contract) to a list.</p>
 </tr>
 </tbody>
 </table>
+<p>Loading a ticker swaps the watchlist panel for the options chain. Press
+<kbd>b</kbd> (or run <code>:watchlist</code> / <code>:wl</code>) to bring the panel back with fresh
+quotes; picking a ticker from it shows the chain again. Background quote
+refreshes never move focus away from the chain.</p>
 <h2 id="persistence">Persistence</h2>
 <p>Watchlists are stored in <code>~/.config/tenor/watchlists.json</code>. The file is JSON,
 human-readable, and safe to edit by hand if you want.</p>
