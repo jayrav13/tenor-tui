@@ -22,6 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A malformed delta filter in the command palette (e.g.
+  `:filter delta 1.2.3 0.5`) crashed the app with a `ValueError`. The delta
+  parser now accepts only real numbers, and an unrecognised or malformed
+  filter shows an "Unknown filter" warning instead of being silently ignored
+  and refetching the chain (#60).
 - Pressing `d` in the watchlist panel could delete a different item from the
   highlighted one (and save that deletion) whenever the display order differed
   from insertion order, i.e. when items were grouped by symbol or re-sorted

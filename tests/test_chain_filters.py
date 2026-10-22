@@ -417,6 +417,16 @@ class TestParseFilterCommand:
         assert result.min_delta == pytest.approx(0.2)
         assert result.max_delta == pytest.approx(0.8)
 
+    def test_delta_range_leading_dot(self):
+        result = parse_filter_command("delta .3 .7")
+        assert result is not None
+        assert result.min_delta == pytest.approx(0.3)
+        assert result.max_delta == pytest.approx(0.7)
+
+    @pytest.mark.parametrize("cmd", ["delta 1.2.3 0.5", "delta . 1", "delta 0.3 .."])
+    def test_malformed_delta_returns_none(self, cmd):
+        assert parse_filter_command(cmd) is None
+
     def test_clear_returns_none(self):
         result = parse_filter_command("clear")
         assert result is None
