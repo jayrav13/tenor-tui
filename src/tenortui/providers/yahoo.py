@@ -25,6 +25,12 @@ def _safe_float_or_none(value) -> float | None:
     return float(value)
 
 
+def _dividend_yield_decimal(value) -> float | None:
+    """Convert Yahoo's percent ``dividendYield`` (0.42 == 0.42%) to a decimal."""
+    pct = _safe_float_or_none(value)
+    return pct / 100 if pct is not None else None
+
+
 def _format_earnings_date(timestamp) -> str | None:
     if timestamp is None:
         return None
@@ -58,7 +64,7 @@ class YahooProvider:
             market_cap=info.get("marketCap"),
             pe_ratio=_safe_float_or_none(info.get("trailingPE")),
             eps=_safe_float_or_none(info.get("trailingEps")),
-            dividend_yield=_safe_float_or_none(info.get("dividendYield")),
+            dividend_yield=_dividend_yield_decimal(info.get("dividendYield")),
             earnings_date=_format_earnings_date(info.get("earningsTimestamp")),
             moving_avg_50d=_safe_float_or_none(info.get("fiftyDayAverage")),
             moving_avg_200d=_safe_float_or_none(info.get("twoHundredDayAverage")),
@@ -125,7 +131,7 @@ def fetch_fundamentals(quote: Quote) -> Quote:
 
     quote.pe_ratio = _safe_float_or_none(info.get("trailingPE"))
     quote.eps = _safe_float_or_none(info.get("trailingEps"))
-    quote.dividend_yield = _safe_float_or_none(info.get("dividendYield"))
+    quote.dividend_yield = _dividend_yield_decimal(info.get("dividendYield"))
     quote.earnings_date = _format_earnings_date(info.get("earningsTimestamp"))
     quote.moving_avg_50d = _safe_float_or_none(info.get("fiftyDayAverage"))
     quote.moving_avg_200d = _safe_float_or_none(info.get("twoHundredDayAverage"))

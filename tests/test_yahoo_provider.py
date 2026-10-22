@@ -6,7 +6,7 @@ from unittest.mock import patch, MagicMock
 import pandas as pd
 import pytest
 
-from tenortui.providers.yahoo import YahooProvider
+from tenortui.providers.yahoo import YahooProvider, fetch_fundamentals
 from tenortui.exceptions import SymbolNotFoundError
 from tenortui.models import Quote, OptionsChain
 
@@ -57,7 +57,8 @@ class TestYahooProviderGetQuote:
             quote = provider.get_quote("AAPL")
         assert quote.pe_ratio == 31.35
         assert quote.eps == 7.91
-        assert quote.dividend_yield == 0.42
+        # Yahoo's dividendYield is a percent (0.42 == 0.42%); Quote stores a decimal
+        assert quote.dividend_yield == pytest.approx(0.0042)
         assert quote.earnings_date is not None
         assert quote.moving_avg_50d == 261.13
         assert quote.moving_avg_200d == 246.82
@@ -142,13 +143,32 @@ class TestYahooProviderGetQuote:
 
     def test_dividend_yield_populated(self):
         info = _load_fixture("yahoo_quote.json")
-        info["dividendYield"] = 0.0055
+        info["dividendYield"] = 2.27  # Yahoo percent, e.g. KO
         provider = YahooProvider()
         with patch(
             "tenortui.providers.yahoo.yf.Ticker", return_value=_mock_ticker(info)
         ):
-            quote = provider.get_quote("AAPL")
-        assert quote.dividend_yield == 0.0055
+            quote = provider.get_quote("KO")
+        assert quote.dividend_yield == pytest.approx(0.0227)
+
+
+class TestFetchFundamentals:
+    def test_fetch_fundamentals_converts_dividend_yield_to_decimal(self, sample_quote):
+        info = _load_fixture("yahoo_quote.json")
+        with patch(
+            "tenortui.providers.yahoo.yf.Ticker", return_value=_mock_ticker(info)
+        ):
+            quote = fetch_fundamentals(sample_quote)
+        assert quote.dividend_yield == pytest.approx(0.0042)
+
+    def test_fetch_fundamentals_nan_dividend_yield_becomes_none(self, sample_quote):
+        info = _load_fixture("yahoo_quote.json")
+        info["dividendYield"] = float("nan")
+        with patch(
+            "tenortui.providers.yahoo.yf.Ticker", return_value=_mock_ticker(info)
+        ):
+            quote = fetch_fundamentals(sample_quote)
+        assert quote.dividend_yield is None
 
     def test_dividend_yield_none_when_missing(self):
         info = _load_fixture("yahoo_quote.json")

@@ -55,14 +55,14 @@ class TestQuote:
             market_cap=3_200_000_000_000,
             pe_ratio=28.5,
             eps=6.42,
-            dividend_yield=0.42,
+            dividend_yield=0.0042,
             earnings_date="Feb 13",
             moving_avg_50d=261.13,
             moving_avg_200d=246.82,
         )
         assert q.pe_ratio == 28.5
         assert q.eps == 6.42
-        assert q.dividend_yield == 0.42
+        assert q.dividend_yield == 0.0042
         assert q.earnings_date == "Feb 13"
         assert q.moving_avg_50d == 261.13
         assert q.moving_avg_200d == 246.82

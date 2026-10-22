@@ -29,7 +29,7 @@ def sample_quote_with_fundamentals():
         market_cap=3_200_000_000_000,
         pe_ratio=31.35,
         eps=7.91,
-        dividend_yield=0.42,
+        dividend_yield=0.0042,
         earnings_date="Feb 13",
         moving_avg_50d=261.13,
         moving_avg_200d=246.82,

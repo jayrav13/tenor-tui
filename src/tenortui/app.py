@@ -539,11 +539,17 @@ class TenorTUI(App):
             quote = await asyncio.to_thread(self._provider.get_quote, symbol)
             self._current_price = quote.price
             ticker_bar.show_quote(quote)
-            self._current_dividend_yield = quote.dividend_yield
+            provider_dividend_yield = quote.dividend_yield
             self._current_earnings_date = quote.earnings_date
             quote = await asyncio.to_thread(fetch_fundamentals, quote)
-            # Update earnings_date after fundamentals fetch (may populate it)
+            # Update earnings_date and dividend yield after fundamentals fetch
+            # (may populate them, e.g. Tradier quotes carry no yield)
             self._current_earnings_date = quote.earnings_date
+            self._current_dividend_yield = (
+                quote.dividend_yield
+                if quote.dividend_yield is not None
+                else provider_dividend_yield
+            )
             self.query_one(FundamentalsBar).show_fundamentals(quote)
         except SymbolNotFoundError:
             ticker_bar.show_error(f"Symbol '{symbol}' not found")
