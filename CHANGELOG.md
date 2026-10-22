@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Viewing a ticker no longer adds it to the active watchlist. Browsing used
+  to append every loaded symbol with no cap, so curated lists filled up with
+  everything you had looked at. Watchlists now change only when you press
+  `w` (#67).
 - `--provider fixture` was accepted by argparse but rejected at runtime with
   "Unknown provider 'fixture'". `KNOWN_PROVIDERS` was hardcoded to
   `{"yahoo", "tradier"}` and drifted from the `PROVIDERS` registry. It now
