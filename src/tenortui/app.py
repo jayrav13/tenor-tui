@@ -490,8 +490,10 @@ class TenorTUI(App):
                     chain_table.clear_filters()
                 else:
                     result = parse_filter_command(filter_cmd)
-                    if result is not None:
-                        chain_table.set_filters(result)
+                    if result is None:
+                        self.notify(f"Unknown filter: {filter_cmd}", severity="warning")
+                        return
+                    chain_table.set_filters(result)
                 if self._current_symbol and self._current_expiration:
                     self._load_chain(self._current_symbol, self._current_expiration)
         elif cmd.startswith("search ") or cmd.startswith("s "):
