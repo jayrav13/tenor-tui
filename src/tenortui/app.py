@@ -153,6 +153,11 @@ class TenorTUI(App):
         # rebuild (items may have changed); tabs only change via the manager,
         # which already calls set_watchlists.
         panel._rebuild_list()
+        # Focus now: a later refresh in the same worker group could cancel a
+        # focus=True fetch and leave focus on the hidden chain.
+        from textual.widgets import ListView
+
+        panel.query_one(ListView).focus()
         self._fetch_watchlist_quotes(focus=True)
 
     def action_focus_search(self) -> None:
@@ -609,7 +614,9 @@ class TenorTUI(App):
         chain_table.loading = False
         self._loading_ticker = False
         self.query_one(StatusBar).update_refresh_time()
-        self._focus_first_table()
+        # The user may have switched back to the watchlist mid-load (b).
+        if chain_table.display:
+            self._focus_first_table()
         if self._auto_refresh_enabled:
             self._start_auto_refresh()
 

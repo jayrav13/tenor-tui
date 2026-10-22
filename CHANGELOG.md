@@ -22,7 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Watchlist quote refreshes (every auto-refresh cycle) no longer move focus
   to the hidden watchlist list, and `d` no longer deletes a watchlist entry
-  while the panel is hidden (#66).
+  while the panel is hidden. `b` focuses the list right away, so a refresh
+  or a ticker load still running when it is pressed no longer leaves focus
+  on the hidden chain (#66).
 - `--provider fixture` was accepted by argparse but rejected at runtime with
   "Unknown provider 'fixture'". `KNOWN_PROVIDERS` was hardcoded to
   `{"yahoo", "tradier"}` and drifted from the `PROVIDERS` registry. It now

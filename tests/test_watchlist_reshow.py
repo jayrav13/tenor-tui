@@ -2,6 +2,7 @@
 
 import pytest
 from textual.widgets import DataTable, ListView
+from textual.worker import WorkerCancelled
 
 from tenortui.app import TenorTUI
 from tenortui.watchlists import Watchlist, WatchlistData, WatchlistItem
@@ -157,3 +158,60 @@ async def test_d_does_not_delete_from_hidden_panel(fake_provider, monkeypatch):
 def test_help_overlay_lists_b_key():
     keys = [k for _, rows in KEYBINDINGS for k, _ in rows]
     assert "b" in keys
+
+
+@pytest.mark.asyncio
+async def test_show_watchlist_focuses_list_even_if_refresh_cancels_worker(
+    fake_provider, monkeypatch
+):
+    """An auto-refresh mid-fetch cancels the focus=True worker (same group)."""
+    import threading
+
+    app = _make_app(fake_provider, monkeypatch)
+    async with app.run_test() as pilot:
+        await app.workers.wait_for_complete()
+        await _load_and_focus_chain(app, pilot)
+        gate = threading.Event()
+        monkeypatch.setattr(
+            "tenortui.app.batch_quotes", lambda syms: gate.wait(2) and []
+        )
+        app.action_show_watchlist()
+        await pilot.pause()
+        app._fetch_watchlist_quotes()  # what _on_auto_refresh does
+        gate.set()
+        try:
+            await app.workers.wait_for_complete()
+        except WorkerCancelled:
+            pass  # the first fetch was cancelled by the refresh, as in the app
+        await pilot.pause()
+        panel = app.query_one(WatchlistPanel)
+        assert app.focused is panel.query_one(ListView), app.focused
+
+
+@pytest.mark.asyncio
+async def test_ticker_load_does_not_focus_hidden_chain(fake_provider, monkeypatch):
+    """Pressing b while a ticker load is running keeps focus on the panel."""
+    import threading
+
+    app = _make_app(fake_provider, monkeypatch)
+    async with app.run_test() as pilot:
+        await app.workers.wait_for_complete()
+        gate = threading.Event()
+        real_get_quote = fake_provider.get_quote
+
+        def slow_get_quote(symbol):
+            gate.wait(2)
+            return real_get_quote(symbol)
+
+        monkeypatch.setattr(fake_provider, "get_quote", slow_get_quote)
+        app._current_symbol = "MSFT"
+        app._load_ticker("MSFT")
+        await pilot.pause()
+        app.action_show_watchlist()
+        await pilot.pause()
+        gate.set()
+        await app.workers.wait_for_complete()
+        await pilot.pause()
+        panel = app.query_one(WatchlistPanel)
+        assert panel.display is True
+        assert app.focused is panel.query_one(ListView), app.focused
