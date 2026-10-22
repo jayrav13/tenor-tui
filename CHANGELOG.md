@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `tenortui --provider tradier` with no `tradier.api_key` in config crashed
+  with an uncaught `KeyError: 'api_key'` traceback. The `--provider` override
+  now runs the same required-field check as the config file, so it prints
+  `Configuration error: Provider 'tradier' requires 'api_key' ...` and exits
+  with code 1 (#59).
 - `--provider fixture` was accepted by argparse but rejected at runtime with
   "Unknown provider 'fixture'". `KNOWN_PROVIDERS` was hardcoded to
   `{"yahoo", "tradier"}` and drifted from the `PROVIDERS` registry. It now

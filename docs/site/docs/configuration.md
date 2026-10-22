@@ -55,7 +55,7 @@ CLI flags override config file values for the current run.
 
 | Flag | Description |
 |---|---|
-| `--provider <name>` | Override the configured provider (`yahoo`, `tradier`, or `fixture`) |
+| `--provider <name>` | Override the configured provider (`yahoo`, `tradier`, or `fixture`). The provider's required fields (e.g. `tradier.api_key`) must still be set in the config file |
 | `--config-help` | Print all available config options and exit |
 | `--help` | Print the full CLI help and exit |
 

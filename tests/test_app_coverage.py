@@ -412,3 +412,28 @@ def test_parse_args_with_provider(monkeypatch):
     monkeypatch.setattr(sys, "argv", ["tenortui", "--provider", "tradier"])
     args = _parse_args()
     assert args.provider == "tradier"
+
+
+def test_main_provider_override_tradier_without_api_key_exits_cleanly(
+    tmp_path, monkeypatch, capsys
+):
+    # Regression for #59: `tenortui --provider tradier` with no api_key in
+    # config raised an uncaught KeyError instead of a clean config error.
+    import sys
+
+    import tenortui.app as app_mod
+    import tenortui.config as config_mod
+
+    rc = tmp_path / "config.yaml"
+    rc.write_text("---\ndefault: yahoo\nyahoo: {}\n")
+    monkeypatch.setattr(config_mod, "resolve_config_path", lambda: rc)
+    monkeypatch.setattr(app_mod.TenorTUI, "run", lambda self: None)
+    monkeypatch.setattr(sys, "argv", ["tenortui", "--provider", "tradier"])
+
+    with pytest.raises(SystemExit) as exc_info:
+        app_mod.main()
+
+    assert exc_info.value.code == 1
+    err = capsys.readouterr().err
+    assert "Configuration error" in err
+    assert "api_key" in err

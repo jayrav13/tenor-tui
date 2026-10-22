@@ -1,7 +1,9 @@
 import pytest
+import yaml
 
 from tenortui.config import (
     KNOWN_PROVIDERS,
+    PROVIDER_REQUIRED_FIELDS,
     RefreshConfig,
     SpreadThresholds,
     load_config,
@@ -38,7 +40,7 @@ class TestLoadConfig:
 
     def test_cli_override(self, tmp_path):
         rc = tmp_path / ".tenorrc"
-        rc.write_text("---\ndefault: yahoo\nyahoo: {}\n")
+        rc.write_text("---\ndefault: yahoo\nyahoo: {}\ntradier:\n  api_key: abc\n")
         config = load_config(config_path=rc, provider_override="tradier")
         assert config.provider_name == "tradier"
 
@@ -67,10 +69,11 @@ class TestLoadConfig:
     def test_provider_override_accepts_every_registered_provider(
         self, tmp_path, provider_name
     ):
-        config = load_config(
-            config_path=tmp_path / "nonexistent",
-            provider_override=provider_name,
-        )
+        # Supply each provider's required fields so the override validates.
+        required = PROVIDER_REQUIRED_FIELDS.get(provider_name, [])
+        rc = tmp_path / "config.yaml"
+        rc.write_text(yaml.safe_dump({provider_name: {f: "x" for f in required}}))
+        config = load_config(config_path=rc, provider_override=provider_name)
         assert config.provider_name == provider_name
 
     def test_tradier_missing_api_key_raises_config_error(self, tmp_path):
@@ -78,6 +81,14 @@ class TestLoadConfig:
         rc.write_text("---\ndefault: tradier\ntradier: {}\n")
         with pytest.raises(ConfigError, match="api_key"):
             load_config(config_path=rc)
+
+    def test_provider_override_tradier_without_api_key_raises(self, tmp_path):
+        # Regression for #59: the --provider override path skipped the
+        # required-field check, so main() later crashed with KeyError.
+        rc = tmp_path / "config.yaml"
+        rc.write_text("---\ndefault: yahoo\nyahoo: {}\n")
+        with pytest.raises(ConfigError, match="api_key"):
+            load_config(config_path=rc, provider_override="tradier")
 
     def test_tradier_sandbox_defaults_false(self, tmp_path):
         rc = tmp_path / ".tenorrc"
