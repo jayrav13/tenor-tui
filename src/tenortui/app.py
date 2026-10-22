@@ -544,9 +544,6 @@ class TenorTUI(App):
                 else provider_dividend_yield
             )
             self.query_one(FundamentalsBar).show_fundamentals(quote)
-            item = WatchlistItem(type="equity", symbol=symbol)
-            add_item(self._watchlist_data, self._watchlist_data.active_index, item)
-            save_watchlists(self._watchlist_data)
         except SymbolNotFoundError:
             ticker_bar.show_error(f"Symbol '{symbol}' not found")
             chain_table.loading = False
