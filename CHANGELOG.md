@@ -22,6 +22,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Calculated Greeks (`yahoo.greeks.enabled: true`) used the wrong dividend
+  yield. Yahoo reports `dividendYield` as a percent (`0.42` = 0.42%), but it
+  went into Black-Scholes/CRR as a 42% continuous yield, skewing call deltas,
+  rho and model prices. The Yahoo provider now converts it to a decimal
+  fraction, which is what `Quote.dividend_yield` holds everywhere. On Tradier,
+  the yield was read before fundamentals were fetched, so Greeks always used
+  `q=0`; the fundamentals yield is now used. The fundamentals bar still shows
+  `Div: 0.42%` (#63).
 - `--provider fixture` was accepted by argparse but rejected at runtime with
   "Unknown provider 'fixture'". `KNOWN_PROVIDERS` was hardcoded to
   `{"yahoo", "tradier"}` and drifted from the `PROVIDERS` registry. It now

@@ -34,7 +34,7 @@ class FundamentalsBar(Widget):
         if quote.eps is not None:
             parts.append(f"EPS: ${quote.eps:.2f}")
         if quote.dividend_yield is not None:
-            parts.append(f"Div: {quote.dividend_yield:.2f}%")
+            parts.append(f"Div: {quote.dividend_yield * 100:.2f}%")
         if quote.earnings_date is not None:
             parts.append(f"Earnings: {quote.earnings_date}")
         if quote.moving_avg_50d is not None:

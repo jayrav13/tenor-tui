@@ -12,6 +12,7 @@ class Quote:
     market_cap: float | None = None
     pe_ratio: float | None = None
     eps: float | None = None
+    # Decimal fraction: 0.0042 means a 0.42% annual yield
     dividend_yield: float | None = None
     earnings_date: str | None = None
     moving_avg_50d: float | None = None
