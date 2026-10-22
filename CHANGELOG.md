@@ -13,8 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`gh-pages` branch, root path `/`) and the diagnostic flow when the live
   site looks stale, after the silent-deploy trap surfaced during #53 (#55).
 
+### Added
+
+- `b` key and `:watchlist` / `:wl` command bring the watchlist panel back
+  after a ticker is loaded, with fresh quotes and the list focused (#66).
+
 ### Fixed
 
+- Watchlist quote refreshes (every auto-refresh cycle) no longer move focus
+  to the hidden watchlist list, and `d` no longer deletes a watchlist entry
+  while the panel is hidden (#66).
 - `--provider fixture` was accepted by argparse but rejected at runtime with
   "Unknown provider 'fixture'". `KNOWN_PROVIDERS` was hardcoded to
   `{"yahoo", "tradier"}` and drifted from the `PROVIDERS` registry. It now

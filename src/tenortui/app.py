@@ -111,7 +111,7 @@ class TenorTUI(App):
         )
         if has_items:
             chain_table.display = False
-            self._fetch_watchlist_quotes()
+            self._fetch_watchlist_quotes(focus=True)
         else:
             watchlist_panel.display = False
         self._update_market_display()
@@ -142,7 +142,18 @@ class TenorTUI(App):
     ) -> None:
         self._watchlist_data.active_index = event.index
         save_watchlists(self._watchlist_data)
-        self._fetch_watchlist_quotes()
+        self._fetch_watchlist_quotes(focus=True)
+
+    def action_show_watchlist(self) -> None:
+        """Bring the watchlist panel back in place of the chain."""
+        panel = self.query_one(WatchlistPanel)
+        panel.display = True
+        self.query_one(ChainTable).display = False
+        # The panel shares self._watchlist_data, so only the list needs a
+        # rebuild (items may have changed); tabs only change via the manager,
+        # which already calls set_watchlists.
+        panel._rebuild_list()
+        self._fetch_watchlist_quotes(focus=True)
 
     def action_focus_search(self) -> None:
         self.query_one(TickerBar).focus_input()
@@ -330,6 +341,9 @@ class TenorTUI(App):
         elif key == "d":
             self._action_remove_from_watchlist()
             event.prevent_default()
+        elif key == "b":
+            self.action_show_watchlist()
+            event.prevent_default()
         elif key == "S":
             panel = self.query_one(WatchlistPanel)
             panel.cycle_sort()
@@ -419,13 +433,13 @@ class TenorTUI(App):
                 self.query_one(WatchlistPanel).set_watchlists(self._watchlist_data)
             except Exception:
                 pass
-            self._fetch_watchlist_quotes()
+            self._fetch_watchlist_quotes(focus=True)
 
     def _action_remove_from_watchlist(self) -> None:
         from textual.widgets import ListView
 
         panel = self.query_one(WatchlistPanel)
-        if not isinstance(self.focused, ListView):
+        if not panel.display or not isinstance(self.focused, ListView):
             return
         # Check if the focused ListView belongs to the WatchlistPanel
         if self.focused not in panel.query(ListView):
@@ -451,6 +465,8 @@ class TenorTUI(App):
             self.action_help()
         elif cmd == "settings":
             self.action_open_settings()
+        elif cmd in ("watchlist", "wl"):
+            self.action_show_watchlist()
         elif cmd.startswith("filter ") or cmd.startswith("f "):
             parts = cmd.split(None, 1)
             if len(parts) == 2:
@@ -474,7 +490,7 @@ class TenorTUI(App):
                 self._load_ticker(symbol)
 
     @work(exclusive=True, group="watchlist-quotes")
-    async def _fetch_watchlist_quotes(self) -> None:
+    async def _fetch_watchlist_quotes(self, focus: bool = False) -> None:
         wl = self._watchlist_data.watchlists[self._watchlist_data.active_index]
         panel = self.query_one(WatchlistPanel)
 
@@ -507,7 +523,10 @@ class TenorTUI(App):
                     continue
             panel.update_contract_quotes(all_contracts)
 
-        # Focus the ListView
+        # Focus the ListView only on explicit requests while the panel is shown,
+        # never on background refreshes (they would steal focus from the chain).
+        if not (focus and panel.display):
+            return
         from textual.widgets import ListView
 
         try:
