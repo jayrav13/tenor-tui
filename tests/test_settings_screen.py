@@ -331,3 +331,123 @@ async def test_wq_saves_and_hot_applies(tenor_app, tmp_path, monkeypatch):
         await pilot.pause()
         assert not isinstance(tenor_app.screen, SettingsScreen)
         assert tenor_app._greeks_config.enabled is True
+
+
+@pytest.mark.asyncio
+async def test_escape_closes_settings_in_navigation_mode():
+    app = SettingsApp()
+    async with app.run_test() as pilot:
+        await pilot.press("comma")
+        await pilot.pause()
+        assert isinstance(app.screen, SettingsScreen)
+        await pilot.press("escape")  # No edit, no command mode
+        await pilot.pause()
+        assert not isinstance(app.screen, SettingsScreen), "Esc did not close settings"
+
+
+@pytest.mark.asyncio
+async def test_escape_warns_on_unsaved_changes():
+    app = SettingsApp()
+    async with app.run_test() as pilot:
+        await pilot.press("comma")
+        await pilot.pause()
+        screen = app.screen
+        await pilot.press("enter")  # Make a change
+        await pilot.pause()
+        assert screen._has_unsaved_changes
+        await pilot.press("escape")
+        await pilot.pause()
+        assert app.screen is screen
+        status = screen.query_one("#settings-status", Static)
+        assert "Unsaved changes. :q! to discard, :wq to save and quit." in (
+            status.render().plain
+        )
+
+
+@pytest.mark.asyncio
+async def test_escape_in_edit_mode_cancels_edit_without_closing():
+    app = SettingsApp()
+    async with app.run_test() as pilot:
+        await pilot.press("comma")
+        await pilot.pause()
+        screen = app.screen
+        target_row = None
+        for i, row in enumerate(screen._rows):
+            if row.key == "refresh.regular":
+                target_row = row
+                for _ in range(i):
+                    await pilot.press("j")
+                break
+        assert target_row is not None
+        await pilot.press("enter")  # Start editing
+        await pilot.pause()
+        assert target_row.is_editing
+        await pilot.press("escape")
+        await pilot.pause()
+        assert not target_row.is_editing
+        assert app.screen is screen
+
+
+@pytest.mark.asyncio
+async def test_escape_in_command_mode_closes_command_bar_without_closing():
+    app = SettingsApp()
+    async with app.run_test() as pilot:
+        await pilot.press("comma")
+        await pilot.pause()
+        screen = app.screen
+        await pilot.press("colon")
+        await pilot.pause()
+        assert screen._command_mode
+        await pilot.press("escape")
+        await pilot.pause()
+        assert not screen._command_mode
+        assert not screen.query_one("#cmd-bar").display
+        assert app.screen is screen
+
+
+@pytest.mark.asyncio
+async def test_action_cancel_or_close_in_modes_does_not_quit():
+    """Direct action calls in command mode or with unsaved changes never dismiss."""
+    app = SettingsApp()
+    async with app.run_test() as pilot:
+        await pilot.press("comma")
+        await pilot.pause()
+        screen = app.screen
+        await pilot.press("colon")
+        await pilot.pause()
+        screen.action_cancel_or_close()
+        await pilot.pause()
+        assert not screen._command_mode
+        assert app.screen is screen
+        await pilot.press("enter")  # Toggle provider (boolean-like cycle, no edit)
+        await pilot.pause()
+        screen.action_cancel_or_close()  # Unsaved changes: warn, stay open
+        await pilot.pause()
+        assert app.screen is screen
+
+
+@pytest.mark.asyncio
+async def test_action_cancel_or_close_in_edit_mode_cancels_without_closing():
+    """Direct action call during an inline edit on a clean screen cancels the
+    edit and keeps the screen open (on_key normally intercepts Esc first)."""
+    app = SettingsApp()
+    async with app.run_test() as pilot:
+        await pilot.press("comma")
+        await pilot.pause()
+        screen = app.screen
+        target_row = None
+        for i, row in enumerate(screen._rows):
+            if row.key == "refresh.regular":
+                target_row = row
+                for _ in range(i):
+                    await pilot.press("j")
+                break
+        assert target_row is not None
+        await pilot.press("enter")  # Start editing
+        await pilot.pause()
+        assert target_row.is_editing
+        assert not screen._has_unsaved_changes
+        screen.action_cancel_or_close()
+        await pilot.pause()
+        assert not target_row.is_editing
+        assert app.screen is screen, "edit-mode cancel dismissed the screen"

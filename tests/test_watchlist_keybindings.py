@@ -231,6 +231,74 @@ async def test_action_remove_from_watchlist_removes_item(fake_provider, monkeypa
         assert len(app._watchlist_data.watchlists[0].items) == initial_count - 1
 
 
+@pytest.mark.asyncio
+async def test_d_removes_highlighted_row_when_grouped_by_symbol(
+    fake_provider, monkeypatch
+):
+    """d removes the highlighted display row, not the item at that insertion index.
+
+    Regression test for #64: the panel groups items by symbol, so display order
+    differs from insertion order.
+    """
+    from textual.widgets import ListView
+
+    aapl = WatchlistItem(type="equity", symbol="AAPL")
+    msft = WatchlistItem(type="equity", symbol="MSFT")
+    aapl_call = WatchlistItem(
+        type="option",
+        symbol="AAPL",
+        strike=200.0,
+        option_type="call",
+        expiration="2099-01-16",
+    )
+    watchlist_data = WatchlistData(
+        watchlists=[Watchlist(name="Default", items=[aapl, msft, aapl_call])]
+    )
+    app = _make_app(fake_provider, monkeypatch, watchlist_data)
+    monkeypatch.setattr("tenortui.app.batch_quotes", lambda syms: [])
+    async with app.run_test() as pilot:
+        await app.workers.wait_for_complete()
+        panel = app.query_one(WatchlistPanel)
+        lv = panel.query_one(ListView)
+        lv.focus()
+        lv.index = 1  # display order: [AAPL, AAPL 200C, MSFT]
+        await pilot.pause()
+        assert panel.get_selected_item() is aapl_call
+
+        app._action_remove_from_watchlist()
+
+        remaining = app._watchlist_data.watchlists[0].items
+        assert remaining == [aapl, msft]
+
+
+@pytest.mark.asyncio
+async def test_d_removes_highlighted_row_after_sort(fake_provider, monkeypatch):
+    """d removes the highlighted row after S re-sorts the display (#64)."""
+    from textual.widgets import ListView
+
+    msft = WatchlistItem(type="equity", symbol="MSFT")
+    aapl = WatchlistItem(type="equity", symbol="AAPL")
+    watchlist_data = WatchlistData(
+        watchlists=[Watchlist(name="Default", items=[msft, aapl])]
+    )
+    app = _make_app(fake_provider, monkeypatch, watchlist_data)
+    monkeypatch.setattr("tenortui.app.batch_quotes", lambda syms: [])
+    async with app.run_test() as pilot:
+        await app.workers.wait_for_complete()
+        panel = app.query_one(WatchlistPanel)
+        assert panel.cycle_sort() == "symbol"
+        lv = panel.query_one(ListView)
+        lv.focus()
+        lv.index = 0  # display order: [AAPL, MSFT]
+        await pilot.pause()
+        assert panel.get_selected_item() is aapl
+
+        app._action_remove_from_watchlist()
+
+        remaining = app._watchlist_data.watchlists[0].items
+        assert remaining == [msft]
+
+
 # ---------------------------------------------------------------------------
 # _get_contract_from_chain_table
 # ---------------------------------------------------------------------------
