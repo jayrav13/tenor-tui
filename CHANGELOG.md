@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Added Claude Code subagent definitions under `.claude/agents/` (project
+  manager, software engineer, code reviewer, CI watcher) and documented the
+  agent-driven issue -> PR -> review -> CI -> merge workflow, including the
+  3-issues-in-flight limit, in `CLAUDE.md` (#65).
+
 - `CLAUDE.md` now documents the GitHub Pages source-path requirement
   (`gh-pages` branch, root path `/`) and the diagnostic flow when the live
   site looks stale, after the silent-deploy trap surfaced during #53 (#55).

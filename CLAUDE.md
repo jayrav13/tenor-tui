@@ -25,6 +25,7 @@ learn not to trust them.
 | Docs deploy workflow change | `.github/workflows/docs.yml`, this `CLAUDE.md` if the process changes |
 | Docs site IA / theme change | `docs/site/mkdocs.yml`, this `CLAUDE.md` if the IA shifts |
 | Git workflow change (issue / branch / commit conventions) | `CLAUDE.md` Git Workflow section |
+| New or changed Claude Code agent definition (`.claude/agents/*.md`) | The agent file, `CLAUDE.md` Git Workflow "Agent-driven workflow" section if the process or hand-offs change, `CHANGELOG.md` |
 | Refactor / internal cleanup with no behavior change | None — but call that out in the PR description so it's intentional |
 
 If a change clearly touches multiple categories, all of them apply.
@@ -186,6 +187,39 @@ All design docs and implementation plans must be persisted to this repo (under `
 ## Git Workflow
 
 Every change follows this process: Issue -> Branch -> Commit -> PR -> Merge -> Cleanup.
+
+### Agent-driven workflow
+
+The main session coordinates four Claude Code subagents defined in
+`.claude/agents/`. Each definition is the source of truth for its role's
+commands and report format; the numbered steps below still describe the
+conventions they follow.
+
+| Agent | File | Model | Role |
+|---|---|---|---|
+| Project manager | `project-manager.md` | Sonnet | Files issues (de-duped; one domain, one priority, one size label; splits `size: L`), answers review threads, merges on green and closes out |
+| Software engineer | `software-engineer-agent.md` | Opus | Implements one issue test-first in a fresh worktree on `fix/<n>-<slug>`, updates docs, pushes and opens the PR; also does review fixes and main syncs |
+| Code reviewer | `code-review-agent.md` | Opus | Posts exactly one adversarial `COMMENT` review per PR, findings as inline `Reviewer:` comments |
+| CI watcher | `ci-agent.md` | Haiku | Polls the PR's final head in the foreground and reports PASS / FAIL with failing logs |
+
+Each issue goes through:
+
+1. **PM files the issue** with its labels.
+2. **Software engineer implements it** and opens the PR (adds the
+   `in progress` label at the start).
+3. **Code reviewer posts one review.** Pushes made to address it are never
+   re-reviewed.
+4. **One review-fix round:** the engineer fixes each finding test-first (or
+   explains why not), and the PM answers every thread with the outcome.
+5. **CI watcher watches the final head.** Any later push gets a new watcher.
+6. **PM merges on green** only when the operator has authorized the merge,
+   then closes out the issue (ticks Success Criteria, removes `in progress`).
+   Without that authorization, the PR is reported to the operator and waits.
+
+At most **3 issues are in flight** at once (filed and assigned to an engineer
+but not yet merged or abandoned). Subagents never touch `main` in the primary
+checkout; each engineer dispatch uses its own worktree and Poetry venv and
+removes them when done.
 
 ### Task Selection & Coordination
 
