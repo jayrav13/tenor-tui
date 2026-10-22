@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Documentation
 
+- Added Claude Code subagent definitions under `.claude/agents/` (project
+  manager, software engineer, code reviewer, CI watcher) and documented the
+  agent-driven issue -> PR -> review -> CI -> merge workflow, including the
+  3-issues-in-flight limit, in `CLAUDE.md`. The CLAUDE.md Planning rule now
+  names the `docs/plans/<date>-<issue#>-<slug>.md` convention and states that
+  a plan only in the PR body doesn't count (#65).
+
 - `CLAUDE.md` now documents the GitHub Pages source-path requirement
   (`gh-pages` branch, root path `/`) and the diagnostic flow when the live
   site looks stale, after the silent-deploy trap surfaced during #53 (#55).
@@ -20,6 +27,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now runs the same required-field check as the config file, so it prints
   `Configuration error: Provider 'tradier' requires 'api_key' ...` and exits
   with code 1 (#59).
+- Pressing `d` in the watchlist panel could delete a different item from the
+  highlighted one (and save that deletion) whenever the display order differed
+  from insertion order, i.e. when items were grouped by symbol or re-sorted
+  with `S`. It now removes exactly the highlighted row's item (#64).
+- `Esc` in the settings screen now closes it when nothing is being
+  edited, matching the documented modal behavior. With unsaved changes it
+  shows the `:q! / :wq` warning instead of closing; in an inline edit or the
+  command bar it still only cancels that (#68).
+- Viewing a ticker no longer adds it to the active watchlist. Browsing used
+  to append every loaded symbol with no cap, so curated lists filled up with
+  everything you had looked at. Watchlists now change only when you press
+  `w` (#67).
 - `--provider fixture` was accepted by argparse but rejected at runtime with
   "Unknown provider 'fixture'". `KNOWN_PROVIDERS` was hardcoded to
   `{"yahoo", "tradier"}` and drifted from the `PROVIDERS` registry. It now
