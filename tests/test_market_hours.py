@@ -109,3 +109,28 @@ class TestTimeToNextState:
         dt = datetime(2026, 3, 23, 19, 0, tzinfo=ET)  # 7:00 PM
         minutes = time_to_next_state(dt)
         assert minutes == 60  # 1 hour to 8 PM
+
+    def test_friday_evening_counts_down_to_monday_premarket(self):
+        """Friday 9 PM ET counts down to Monday 4 AM, not Saturday (#58)."""
+        dt = datetime(2026, 10, 23, 21, 0, tzinfo=ET)  # Friday 9:00 PM
+        assert time_to_next_state(dt) == 55 * 60
+
+    def test_friday_at_close_counts_down_to_monday_premarket(self):
+        """Friday 8:00 PM ET (just closed) counts down to Monday 4 AM."""
+        dt = datetime(2026, 10, 23, 20, 0, tzinfo=ET)
+        assert time_to_next_state(dt) == 56 * 60
+
+    def test_friday_before_midnight_counts_down_to_monday_premarket(self):
+        """Friday 11:59 PM ET counts down to Monday 4 AM."""
+        dt = datetime(2026, 10, 23, 23, 59, tzinfo=ET)
+        assert time_to_next_state(dt) == 48 * 60 + 4 * 60 + 1
+
+    def test_thursday_evening_counts_down_to_friday_premarket(self):
+        """Thursday 9 PM ET still counts down to Friday 4 AM."""
+        dt = datetime(2026, 10, 22, 21, 0, tzinfo=ET)
+        assert time_to_next_state(dt) == 7 * 60
+
+    def test_friday_after_hours_counts_down_to_close(self):
+        """Friday after-hours still counts down to 8 PM ET."""
+        dt = datetime(2026, 10, 23, 18, 0, tzinfo=ET)
+        assert time_to_next_state(dt) == 120
