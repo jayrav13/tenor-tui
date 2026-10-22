@@ -22,6 +22,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Deleting a watchlist that sits before the active one in the Watchlist
+  Manager no longer switches the active watchlist to the list after it. The
+  same list stays active and the correct `active_index` is saved (#57).
 - Pressing `d` in the watchlist panel could delete a different item from the
   highlighted one (and save that deletion) whenever the display order differed
   from insertion order, i.e. when items were grouped by symbol or re-sorted
