@@ -182,7 +182,7 @@ Tests use `FakeProvider` from `conftest.py` to avoid real API calls. `pytest-asy
 
 ## Planning
 
-All design docs and implementation plans must be persisted to this repo (under `docs/`) and committed to the feature branch before creating a PR.
+All design docs and implementation plans must be persisted to this repo (under `docs/`) and committed to the feature branch before creating a PR. Plans go in `docs/plans/<YYYY-MM-DD>-<slug>.md`; agent-driven work names them `docs/plans/<YYYY-MM-DD>-<issue#>-<slug>.md`. A plan written only in the PR body does not satisfy this rule: the software engineer agent always commits a plan file (writing a short one when the dispatch gives none), and the code reviewer flags a PR without one.
 
 ## Git Workflow
 

@@ -29,8 +29,8 @@ gh pr diff <PR>
 
 Record `headRefOid`; every comment is anchored to it. Read the issue the PR
 closes (`gh issue view <n>`) for intent and success criteria, and the plan
-(`docs/plans/<issue#>-<slug>.md` at the head commit, or the PR body's "Plan"
-section). Read `CLAUDE.md` and `.claude/agents/software-engineer-agent.md`
+(`docs/plans/<date>-<issue#>-<slug>.md` at the head commit; find it with
+`git ls-tree --name-only <headRefOid> docs/plans/`). Read `CLAUDE.md` and `.claude/agents/software-engineer-agent.md`
 (the coding standards; if it isn't on `main` yet, the dispatch gives its
 path). Read the full changed files at the head commit, not just the hunks:
 
@@ -56,8 +56,10 @@ Try to break the change. Look for:
 - **Tests:** behavior with no test, tests that can't fail, async tests missing
   `@pytest.mark.asyncio`, tests that hit the network or the real
   `~/.config/tenor/`.
-- **Plan conformance:** missing planned scope, unplanned scope, undeclared
-  deviations. A declared, reasonable deviation isn't a finding.
+- **Plan conformance:** no plan file committed under `docs/` (CLAUDE.md's
+  Planning rule; a plan only in the PR body is a finding), missing planned
+  scope, unplanned scope, undeclared deviations. A declared, reasonable
+  deviation isn't a finding.
 - **Size:** recount the PR's code lines:
   ```bash
   git fetch origin <baseRefName> <headRefName>

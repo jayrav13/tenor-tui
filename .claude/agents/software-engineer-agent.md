@@ -42,6 +42,7 @@ git -C $ROOT worktree add --no-track -b fix/<n>-<slug> $ROOT/.claude/worktrees/f
 # Review fix or main sync: check out the PR's existing branch, tracking origin.
 git -C $ROOT worktree add -B fix/<n>-<slug> $ROOT/.claude/worktrees/fix-<n>-<slug>-$HASH origin/fix/<n>-<slug>
 WT=$ROOT/.claude/worktrees/fix-<n>-<slug>-$HASH
+echo "ROOT=$ROOT WT=$WT"
 cd $WT && poetry install --with docs
 ```
 
@@ -51,8 +52,13 @@ another worktree already has the branch checked out (report its path, never
 touch it), if a new branch already exists, or if the PR branch doesn't exist
 on origin.
 
-The shell's cwd resets between Bash calls: start each one with `cd $WT && ...`
-and give Read, Edit and Write paths under `$WT`.
+**Shell variables don't survive between Bash calls**, and the cwd resets too.
+`$ROOT`, `$HASH` and `$WT` exist only in that first call, and the random
+suffix can't be recovered later, so record the literal paths the `echo`
+prints. From then on, write those literal paths into every command: start
+each Bash call with `cd <WT> && ...` (the literal worktree path, never `$WT`)
+and give Read, Edit and Write absolute paths under it. Below, `<WT>` and
+`<ROOT>` mean those recorded literal paths.
 
 Never read, write or delete the real `~/.config/tenor/` directory. Tests
 monkeypatch the persistence and network seams in `tenortui.app`
@@ -98,7 +104,7 @@ Before every commit, run the full gate in your worktree and make sure it's
 green:
 
 ```bash
-cd $WT && poetry run ruff check src/ tests/ && poetry run ruff format --check src/ tests/ \
+cd <WT> && poetry run ruff check src/ tests/ && poetry run ruff format --check src/ tests/ \
   && poetry run python -m pytest -q --cov=tenortui --cov-fail-under=90 \
   && python3 bin/check-version-bump
 ```
@@ -115,9 +121,15 @@ If you changed anything under `docs/site/`, also run
 - **Commit messages:** an imperative subject (≤ 72 chars), a blank line, a
   short body of bullets saying what and why, then `Closes #<issue>`, then the
   trailer `Co-Authored-By: Claude <noreply@anthropic.com>`.
-- **Plan:** if the dispatch gave a plan file, commit it unchanged as
-  `docs/plans/<issue#>-<slug>.md` as the branch's first commit
-  (`Add plan for #<n>`) unless it's already in the repo.
+- **Plan (always committed):** CLAUDE.md's Planning rule requires every
+  plan to be committed under `docs/` before the PR, so every new-issue
+  branch's first commit (`Add plan for #<n>`) adds
+  `docs/plans/<YYYY-MM-DD>-<issue#>-<slug>.md` (today's date, matching the
+  existing `docs/plans/<date>-<slug>.md` files), unless a plan for the
+  issue is already in the repo. If the dispatch gave a plan file, commit it
+  unchanged. If not, write a short one yourself before any code: the
+  approach, the files you expect to touch, the tests you'll write, and what
+  is out of scope. A plan that exists only in the PR body doesn't count.
 - **Size:** count code lines before opening the PR:
   ```bash
   git diff --numstat origin/main...HEAD -- src bin | awk '{n += $1 + $2} END {print n + 0}'
@@ -130,9 +142,8 @@ If you changed anything under `docs/site/`, also run
   --title "<commit subject>" --body-file <file>` (write the body to a file in
   the scratchpad). The body has, in order:
   1. `Closes #<issue>` and a one-paragraph summary.
-  2. **Plan**: a link to the plan file, or a short section stating the
-     approach. Then **Deviations from the plan**: each with its reason, or
-     "none".
+  2. **Plan**: a link to the committed plan file. Then **Deviations from
+     the plan**: each with its reason, or "none".
   3. **TDD log**, **Not unit-tested**, **Changes** and **Docs**.
   4. **Code lines**: the count and the command.
   5. **Gate**: the result.
@@ -151,15 +162,15 @@ If you changed anything under `docs/site/`, also run
 Whether the work succeeded, failed or was blocked:
 
 ```bash
-cd $WT && git status --porcelain && git log origin/fix/<n>-<slug>..HEAD --oneline
+cd <WT> && git status --porcelain && git log origin/fix/<n>-<slug>..HEAD --oneline
 ```
 
 If both print nothing (everything is committed and pushed), remove the venv
 and the worktree, then delete the local branch:
 
 ```bash
-cd $WT && poetry env remove --all
-git -C $ROOT worktree remove $WT && git -C $ROOT branch -D fix/<n>-<slug>
+cd <WT> && poetry env remove --all
+git -C <ROOT> worktree remove <WT> && git -C <ROOT> branch -D fix/<n>-<slug>
 ```
 
 If anything is uncommitted or unpushed (for example the gate is red, so you
