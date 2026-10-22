@@ -25,7 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deleting a watchlist that sits before the active one in the Watchlist
   Manager no longer switches the active watchlist to the list after it. The
   same list stays active and the correct `active_index` is saved (#57).
-
+- Pressing `d` in the watchlist panel could delete a different item from the
+  highlighted one (and save that deletion) whenever the display order differed
+  from insertion order, i.e. when items were grouped by symbol or re-sorted
+  with `S`. It now removes exactly the highlighted row's item (#64).
 - `Esc` in the settings screen now closes it when nothing is being
   edited, matching the documented modal behavior. With unsaved changes it
   shows the `:q! / :wq` warning instead of closing; in an inline edit or the

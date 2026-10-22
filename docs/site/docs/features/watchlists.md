@@ -16,7 +16,7 @@ current symbol (or the highlighted contract) to a list.
 |---|---|
 | <kbd>w</kbd> | Open the watchlist picker (add current symbol to a list) |
 | <kbd>W</kbd> | Open the watchlist manager (create / rename / delete lists) |
-| <kbd>d</kbd> | Delete the focused symbol from its list |
+| <kbd>d</kbd> | Delete the highlighted row (ticker or contract) from its list, whatever the current grouping or sort order |
 | <kbd>S</kbd> | Sort the focused list (cycles through symbol / price / change / volume) |
 
 ## Persistence
