@@ -16,8 +16,14 @@ current symbol (or the highlighted contract) to a list.
 |---|---|
 | <kbd>w</kbd> | Open the watchlist picker (add current symbol to a list) |
 | <kbd>W</kbd> | Open the watchlist manager (create / rename / delete lists) |
-| <kbd>d</kbd> | Delete the highlighted row (ticker or contract) from its list, whatever the current grouping or sort order |
+| <kbd>b</kbd> | Back to the watchlist panel from the chain (also `:watchlist` / `:wl`) |
+| <kbd>d</kbd> | Delete the highlighted row (ticker or contract) from its list, whatever the current grouping or sort order (only while the panel is shown) |
 | <kbd>S</kbd> | Sort the focused list (cycles through symbol / price / change / volume) |
+
+Loading a ticker swaps the watchlist panel for the options chain. Press
+<kbd>b</kbd> (or run `:watchlist` / `:wl`) to bring the panel back with fresh
+quotes; picking a ticker from it shows the chain again. Background quote
+refreshes never move focus away from the chain.
 
 ## Persistence
 

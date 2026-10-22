@@ -162,7 +162,7 @@ async def test_on_watchlist_manager_closed_with_data_updates(
         )
         # _fetch_watchlist_quotes tries to access active_index watchlist items;
         # patch it out to keep this test focused on data update behavior.
-        monkeypatch.setattr(app, "_fetch_watchlist_quotes", lambda: None)
+        monkeypatch.setattr(app, "_fetch_watchlist_quotes", lambda **kw: None)
         app._on_watchlist_manager_closed(new_data)
         assert app._watchlist_data is new_data
         assert len(app._watchlist_data.watchlists) == 2
