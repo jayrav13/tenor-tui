@@ -13,6 +13,7 @@ from tenortui.watchlists import (
     migrate_from_history,
 )
 from tenortui.widgets.watchlist_panel import WatchlistPanel
+from tenortui.widgets.watchlist_picker import WatchlistPicker
 
 
 class TestMigrationIntegration:
@@ -93,12 +94,22 @@ class TestAppWithWatchlists:
             assert panel is not None
 
     @pytest.mark.asyncio
-    async def test_ticker_added_to_watchlist_on_search(
-        self, fake_provider, monkeypatch
-    ):
-        wl_data = WatchlistData(watchlists=[Watchlist(name="Default")], active_index=0)
+    async def test_search_leaves_watchlists_unchanged(self, fake_provider, monkeypatch):
+        """Browsing a ticker must not add it to any list (#67)."""
+        wl_data = WatchlistData(
+            watchlists=[
+                Watchlist(name="Default"),
+                Watchlist(
+                    name="Core", items=[WatchlistItem(type="equity", symbol="MSFT")]
+                ),
+            ],
+            active_index=0,
+        )
+        saves = []
         monkeypatch.setattr("tenortui.app.migrate_from_history", lambda: wl_data)
-        monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
+        monkeypatch.setattr(
+            "tenortui.app.save_watchlists", lambda data, **kw: saves.append(data)
+        )
         monkeypatch.setattr("tenortui.app.batch_quotes", lambda symbols: [])
         monkeypatch.setattr("tenortui.app.fetch_fundamentals", lambda q: q)
         app = TenorTUI(provider=fake_provider)
@@ -108,7 +119,62 @@ class TestAppWithWatchlists:
             await pilot.press("enter")
             await app.workers.wait_for_complete()
 
-            assert any(
-                item.symbol == "AAPL" and item.type == "equity"
-                for item in wl_data.watchlists[0].items
-            )
+            assert wl_data.watchlists[0].items == []
+            assert [i.symbol for i in wl_data.watchlists[1].items] == ["MSFT"]
+            assert saves == []
+
+    @pytest.mark.asyncio
+    async def test_browsing_many_tickers_keeps_curated_list(
+        self, fake_provider, monkeypatch
+    ):
+        """Repro from #67: browsing 15 tickers leaves ["AAPL"] as ["AAPL"]."""
+        wl_data = WatchlistData(
+            watchlists=[
+                Watchlist(
+                    name="Core", items=[WatchlistItem(type="equity", symbol="AAPL")]
+                )
+            ],
+            active_index=0,
+        )
+        monkeypatch.setattr("tenortui.app.migrate_from_history", lambda: wl_data)
+        monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
+        monkeypatch.setattr("tenortui.app.batch_quotes", lambda symbols: [])
+        monkeypatch.setattr("tenortui.app.fetch_fundamentals", lambda q: q)
+        app = TenorTUI(provider=fake_provider)
+        async with app.run_test():
+            for i in range(15):
+                app._load_ticker(f"T{i:02d}")
+                await app.workers.wait_for_complete()
+
+        assert [it.symbol for it in wl_data.watchlists[0].items] == ["AAPL"]
+
+    @pytest.mark.asyncio
+    async def test_w_key_still_adds_browsed_ticker(self, fake_provider, monkeypatch):
+        """After browsing, pressing w and picking a list adds the ticker."""
+        wl_data = WatchlistData(watchlists=[Watchlist(name="Default")], active_index=0)
+        saves = []
+        monkeypatch.setattr("tenortui.app.migrate_from_history", lambda: wl_data)
+        monkeypatch.setattr(
+            "tenortui.app.save_watchlists", lambda data, **kw: saves.append(data)
+        )
+        monkeypatch.setattr("tenortui.app.batch_quotes", lambda symbols: [])
+        monkeypatch.setattr("tenortui.app.fetch_fundamentals", lambda q: q)
+        app = TenorTUI(provider=fake_provider)
+        async with app.run_test() as pilot:
+            app.action_focus_search()
+            await pilot.press(*"AAPL")
+            await pilot.press("enter")
+            await app.workers.wait_for_complete()
+
+            app.set_focus(None)
+            await pilot.press("w")
+            await pilot.pause()
+            assert isinstance(app.screen, WatchlistPicker)
+            # Pick the first list, as Enter on the highlighted row does.
+            app.screen.dismiss(0)
+            await pilot.pause()
+
+            assert [(i.type, i.symbol) for i in wl_data.watchlists[0].items] == [
+                ("equity", "AAPL")
+            ]
+            assert len(saves) == 1
