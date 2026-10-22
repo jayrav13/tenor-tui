@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `Esc` in the settings screen now closes it when nothing is being
+  edited, matching the documented modal behavior. With unsaved changes it
+  shows the `:q! / :wq` warning instead of closing; in an inline edit or the
+  command bar it still only cancels that (#68).
 - `--provider fixture` was accepted by argparse but rejected at runtime with
   "Unknown provider 'fixture'". `KNOWN_PROVIDERS` was hardcoded to
   `{"yahoo", "tradier"}` and drifted from the `PROVIDERS` registry. It now
