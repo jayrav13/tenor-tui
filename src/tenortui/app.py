@@ -432,10 +432,17 @@ class TenorTUI(App):
         # Check if the focused ListView belongs to the WatchlistPanel
         if self.focused not in panel.query(ListView):
             return
-        lv = self.focused
-        if lv.index is None:
+        # The ListView index is in display order (grouped/sorted), not insertion
+        # order, so resolve the highlighted row to its item first.
+        selected = panel.get_selected_item()
+        if selected is None:
             return
-        remove_item(self._watchlist_data, self._watchlist_data.active_index, lv.index)
+        wl_index = self._watchlist_data.active_index
+        items = self._watchlist_data.watchlists[wl_index].items
+        item_index = next((i for i, item in enumerate(items) if item is selected), None)
+        if item_index is None:
+            return
+        remove_item(self._watchlist_data, wl_index, item_index)
         save_watchlists(self._watchlist_data)
         try:
             panel.set_watchlists(self._watchlist_data)
@@ -542,9 +549,6 @@ class TenorTUI(App):
             # Update earnings_date after fundamentals fetch (may populate it)
             self._current_earnings_date = quote.earnings_date
             self.query_one(FundamentalsBar).show_fundamentals(quote)
-            item = WatchlistItem(type="equity", symbol=symbol)
-            add_item(self._watchlist_data, self._watchlist_data.active_index, item)
-            save_watchlists(self._watchlist_data)
         except SymbolNotFoundError:
             ticker_bar.show_error(f"Symbol '{symbol}' not found")
             chain_table.loading = False

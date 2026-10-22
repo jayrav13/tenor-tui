@@ -34,6 +34,17 @@ that modal is open.
 | <kbd>d</kbd> | Delete focused symbol from its list |
 | <kbd>S</kbd> | Sort focused list (cycles symbol / price / change / volume) |
 
+## Settings
+
+| Key | Action |
+|---|---|
+| <kbd>j</kbd> / <kbd>k</kbd> | Move between settings |
+| <kbd>Enter</kbd> | Edit / toggle / cycle the focused setting |
+| <kbd>Esc</kbd> | Cancel an inline edit or the command bar; otherwise close settings (warns if there are unsaved changes) |
+| <kbd>,</kbd> | Close settings (warns if there are unsaved changes) |
+| <kbd>:</kbd>`w` / <kbd>:</kbd>`wq` | Save / save and close |
+| <kbd>:</kbd>`q` / <kbd>:</kbd>`q!` | Close (warns if unsaved) / close discarding changes |
+
 !!! note
     Bindings are subject to change between minor versions. Press <kbd>?</kbd>
     inside the app for the authoritative reference at any moment.

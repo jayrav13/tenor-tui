@@ -60,7 +60,7 @@ Add a full-screen settings panel to TenorTUI, accessible via `,` keybinding, all
 |-----|--------|
 | `j` / `k` | Move cursor between setting rows |
 | `Enter` | Edit focused setting (inline edit for text/numbers, toggle for booleans, cycle for enums) |
-| `Esc` | Cancel inline edit |
+| `Esc` | Cancel inline edit or close the command bar; in navigation mode, quit (same as `:q`, warns if unsaved changes) |
 | `:wq` | Save and quit |
 | `:w` | Save (stay on screen) |
 | `:q` | Quit (warns if unsaved changes) |
