@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   parser now accepts only real numbers, and an unrecognised or malformed
   filter shows an "Unknown filter" warning instead of being silently ignored
   and refetching the chain (#60).
+- Pressing `d` in the watchlist panel could delete a different item from the
+  highlighted one (and save that deletion) whenever the display order differed
+  from insertion order, i.e. when items were grouped by symbol or re-sorted
+  with `S`. It now removes exactly the highlighted row's item (#64).
 - `Esc` in the settings screen now closes it when nothing is being
   edited, matching the documented modal behavior. With unsaved changes it
   shows the `:q! / :wq` warning instead of closing; in an inline edit or the
