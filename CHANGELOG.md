@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Manual refresh (`r` / `Ctrl+R`) no longer jumps back to the first expiry
+  tab. It refreshes the quote and reloads the chain for the expiry you had
+  selected, matching auto-refresh. If that expiry is no longer listed, it
+  falls back to the first one (#61).
 - `--provider fixture` was accepted by argparse but rejected at runtime with
   "Unknown provider 'fixture'". `KNOWN_PROVIDERS` was hardcoded to
   `{"yahoo", "tradier"}` and drifted from the `PROVIDERS` registry. It now
