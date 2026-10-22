@@ -113,6 +113,15 @@ def _parse_spread_thresholds(raw: dict) -> SpreadThresholds:
     )
 
 
+def _validate_required_fields(provider_name: str, provider_config: dict) -> None:
+    """Raise ConfigError if the provider's required config fields are missing."""
+    for req_field in PROVIDER_REQUIRED_FIELDS.get(provider_name, []):
+        if req_field not in provider_config:
+            raise ConfigError(
+                f"Provider '{provider_name}' requires '{req_field}' in ~/.config/tenor/config.yaml"
+            )
+
+
 def load_config(
     config_path: Path | None = None,
     provider_override: str | None = None,
@@ -126,14 +135,13 @@ def load_config(
 
     if provider_override:
         provider_name = provider_override
-        # When overriding via CLI, skip required-field validation — caller is
-        # responsible for supplying credentials (env vars, etc.)
         provider_config = raw.get(provider_name, {}) or {}
         if provider_name not in KNOWN_PROVIDERS:
             raise ConfigError(
                 f"Unknown provider '{provider_name}'. "
                 f"Available: {', '.join(sorted(KNOWN_PROVIDERS))}"
             )
+        _validate_required_fields(provider_name, provider_config)
         return AppConfig(
             provider_name=provider_name,
             provider_config=provider_config,
@@ -157,11 +165,7 @@ def load_config(
 
     provider_config = raw.get(provider_name, {}) or {}
 
-    for req_field in PROVIDER_REQUIRED_FIELDS.get(provider_name, []):
-        if req_field not in provider_config:
-            raise ConfigError(
-                f"Provider '{provider_name}' requires '{req_field}' in ~/.config/tenor/config.yaml"
-            )
+    _validate_required_fields(provider_name, provider_config)
 
     return AppConfig(
         provider_name=provider_name,
