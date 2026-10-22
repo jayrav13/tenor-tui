@@ -22,6 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Deleting a watchlist that sits before the active one in the Watchlist
+  Manager no longer switches the active watchlist to the list after it. The
+  same list stays active and the correct `active_index` is saved (#57).
+
 - `Esc` in the settings screen now closes it when nothing is being
   edited, matching the documented modal behavior. With unsaved changes it
   shows the `:q! / :wq` warning instead of closing; in an inline edit or the

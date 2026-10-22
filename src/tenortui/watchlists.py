@@ -119,10 +119,12 @@ def rename_watchlist(data: WatchlistData, index: int, name: str) -> WatchlistDat
 
 
 def delete_watchlist(data: WatchlistData, index: int) -> WatchlistData:
-    if len(data.watchlists) <= 1:
+    if len(data.watchlists) <= 1 or not 0 <= index < len(data.watchlists):
         return data
     data.watchlists.pop(index)
-    if data.active_index >= len(data.watchlists):
+    if index < data.active_index:
+        data.active_index -= 1
+    elif data.active_index >= len(data.watchlists):
         data.active_index = len(data.watchlists) - 1
     return data
 

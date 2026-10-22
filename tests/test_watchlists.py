@@ -347,6 +347,40 @@ class TestDeleteWatchlist:
         result = delete_watchlist(data, 1)
         assert result.active_index == 0
 
+    @staticmethod
+    def _abcd(active_index):
+        return WatchlistData(
+            watchlists=[Watchlist(name=n) for n in "ABCD"],
+            active_index=active_index,
+        )
+
+    def test_deleting_before_active_keeps_same_active_list(self):
+        data = self._abcd(active_index=2)  # "C" is active
+        result = delete_watchlist(data, 0)
+        assert result.active_index == 1
+        assert result.watchlists[result.active_index].name == "C"
+
+    def test_deleting_after_active_leaves_index_unchanged(self):
+        data = self._abcd(active_index=1)  # "B" is active
+        result = delete_watchlist(data, 3)
+        assert result.active_index == 1
+        assert result.watchlists[result.active_index].name == "B"
+
+    def test_deleting_active_list_yields_valid_index(self):
+        data = self._abcd(active_index=1)  # "B" is active
+        result = delete_watchlist(data, 1)
+        assert result.active_index == 1
+        assert result.watchlists[result.active_index].name == "C"
+
+    def test_out_of_range_index_is_noop(self):
+        data = self._abcd(active_index=2)
+        result = delete_watchlist(data, 4)
+        assert [w.name for w in result.watchlists] == list("ABCD")
+        assert result.active_index == 2
+        result = delete_watchlist(data, -1)
+        assert [w.name for w in result.watchlists] == list("ABCD")
+        assert result.active_index == 2
+
 
 class TestMigrateFromHistory:
     def test_migrates_history(self, tmp_path):
