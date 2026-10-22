@@ -617,6 +617,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#demo" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -841,6 +852,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#filters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Filters
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#demo" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -892,6 +914,41 @@ right, with the at-the-money strike highlighted.</p>
 <p>Greeks columns appear automatically when the provider supplies them. The
 default Yahoo provider does <strong>not</strong> include Greeks; the Tradier provider does.
 See <a href="../providers/">Providers</a> for the full capability matrix.</p>
+<h2 id="filters">Filters</h2>
+<p>Press <kbd>:</kbd> to open the command palette, then type <code>filter &lt;expr&gt;</code>
+(or <code>f &lt;expr&gt;</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>filter itm</code> / <code>filter otm</code></td>
+<td>In-the-money / out-of-the-money contracts only</td>
+</tr>
+<tr>
+<td><code>filter volume &gt; N</code> (or <code>vol &gt; N</code>)</td>
+<td>Contracts with volume above <code>N</code></td>
+</tr>
+<tr>
+<td><code>filter oi &gt; N</code></td>
+<td>Contracts with open interest above <code>N</code></td>
+</tr>
+<tr>
+<td><code>filter delta &lt;min&gt; &lt;max&gt;</code></td>
+<td>Contracts with |Δ| in the range, e.g. <code>delta 0.3 0.7</code> or <code>delta .3 .7</code></td>
+</tr>
+<tr>
+<td><code>filter clear</code></td>
+<td>Remove all filters</td>
+</tr>
+</tbody>
+</table>
+<p>An unrecognised or malformed filter (for example <code>filter delta 1.2.3 0.5</code>)
+shows an "Unknown filter" warning and leaves the current chain unchanged.</p>
 <h2 id="demo">Demo</h2>
 <p><img alt="Loading and switching expiries" loading="lazy" src="../../assets/demos/expiry-and-greeks.gif" /></p>
 
