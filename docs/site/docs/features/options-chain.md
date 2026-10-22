@@ -27,6 +27,22 @@ Greeks columns appear automatically when the provider supplies them. The
 default Yahoo provider does **not** include Greeks; the Tradier provider does.
 See [Providers](providers.md) for the full capability matrix.
 
+## Filters
+
+Press <kbd>:</kbd> to open the command palette, then type `filter <expr>`
+(or `f <expr>`):
+
+| Command | Shows |
+|---|---|
+| `filter itm` / `filter otm` | In-the-money / out-of-the-money contracts only |
+| `filter volume > N` (or `vol > N`) | Contracts with volume above `N` |
+| `filter oi > N` | Contracts with open interest above `N` |
+| `filter delta <min> <max>` | Contracts with \|Δ\| in the range, e.g. `delta 0.3 0.7` or `delta .3 .7` |
+| `filter clear` | Remove all filters |
+
+An unrecognised or malformed filter (for example `filter delta 1.2.3 0.5`)
+shows an "Unknown filter" warning and leaves the current chain unchanged.
+
 ## Demo
 
 ![Loading and switching expiries](../assets/demos/expiry-and-greeks.gif){ loading=lazy }

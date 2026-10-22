@@ -200,7 +200,8 @@ def parse_filter_command(command: str) -> ChainFilters | None:
         return ChainFilters(min_oi=threshold + 1)
 
     # delta <min> <max>
-    m = re.fullmatch(r"delta\s+([\d.]+)\s+([\d.]+)", cmd)
+    num = r"(\d+(?:\.\d*)?|\.\d+)"
+    m = re.fullmatch(rf"delta\s+{num}\s+{num}", cmd)
     if m:
         return ChainFilters(min_delta=float(m.group(1)), max_delta=float(m.group(2)))
 
