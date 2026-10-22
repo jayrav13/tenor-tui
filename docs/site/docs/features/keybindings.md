@@ -31,6 +31,7 @@ that modal is open.
 |---|---|
 | <kbd>w</kbd> | Add current symbol to a watchlist (opens picker) |
 | <kbd>W</kbd> | Open the watchlist manager (create / rename / delete lists) |
+| <kbd>b</kbd> | Back to the watchlist panel (also `:watchlist` / `:wl`) |
 | <kbd>d</kbd> | Delete focused symbol from its list |
 | <kbd>S</kbd> | Sort focused list (cycles symbol / price / change / volume) |
 

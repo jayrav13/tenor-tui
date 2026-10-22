@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`gh-pages` branch, root path `/`) and the diagnostic flow when the live
   site looks stale, after the silent-deploy trap surfaced during #53 (#55).
 
+### Added
+
+- `b` key and `:watchlist` / `:wl` command bring the watchlist panel back
+  after a ticker is loaded, with fresh quotes and the list focused (#66).
+
 ### Fixed
 
 - `tenortui --provider tradier` with no `tradier.api_key` in config crashed
@@ -27,6 +32,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now runs the same required-field check as the config file, so it prints
   `Configuration error: Provider 'tradier' requires 'api_key' ...` and exits
   with code 1 (#59).
+- Watchlist quote refreshes (every auto-refresh cycle) no longer move focus
+  to the hidden watchlist list, and `d` no longer deletes a watchlist entry
+  while the panel is hidden. `b` focuses the list right away, so a refresh
+  or a ticker load still running when it is pressed no longer leaves focus
+  on the hidden chain (#66).
+- A malformed delta filter in the command palette (e.g.
+  `:filter delta 1.2.3 0.5`) crashed the app with a `ValueError`. The delta
+  parser now accepts only real numbers, and an unrecognised or malformed
+  filter shows an "Unknown filter" warning instead of being silently ignored
+  and refetching the chain (#60).
 - Pressing `d` in the watchlist panel could delete a different item from the
   highlighted one (and save that deletion) whenever the display order differed
   from insertion order, i.e. when items were grouped by symbol or re-sorted

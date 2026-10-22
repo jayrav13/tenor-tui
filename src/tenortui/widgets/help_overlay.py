@@ -39,6 +39,7 @@ KEYBINDINGS = [
         [
             ("w", "Add ticker/contract to watchlist"),
             ("W", "Open watchlist manager"),
+            ("b", "Back to the watchlist panel"),
             ("d", "Remove item from watchlist"),
             ("S", "Cycle sort order (default/symbol/price/change/volume)"),
         ],

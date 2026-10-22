@@ -228,3 +228,64 @@ async def test_status_bar_shows_help_hint():
         rendered = keys_widget.render().plain
         assert "?" in rendered
         assert "Help" in rendered
+
+
+# --- Filter command handling (#60) ---
+
+
+def _patch_app_seams(monkeypatch):
+    monkeypatch.setattr(
+        "tenortui.app.migrate_from_history",
+        lambda: WatchlistData(watchlists=[Watchlist(name="Default")]),
+    )
+    monkeypatch.setattr("tenortui.app.save_watchlists", lambda data, **kw: None)
+    monkeypatch.setattr("tenortui.app.batch_quotes", lambda syms: [])
+
+
+async def _submit_filter(fake_provider, monkeypatch, command):
+    """Submit *command* to a running app; return (notifications, chain reloads)."""
+    _patch_app_seams(monkeypatch)
+    app = TenorTUI(provider=fake_provider)
+    notes: list[tuple[str, str]] = []
+    reloads: list[tuple[str, str]] = []
+    async with app.run_test() as pilot:
+        await pilot.pause()
+        app._current_symbol = "AAPL"
+        app._current_expiration = "2026-12-18"
+        monkeypatch.setattr(
+            app,
+            "notify",
+            lambda msg, severity="information", **kw: notes.append((msg, severity)),
+        )
+        monkeypatch.setattr(
+            app, "_load_chain", lambda sym, exp: reloads.append((sym, exp))
+        )
+        app.post_message(CommandPalette.CommandSubmitted(command))
+        await pilot.pause()
+        await pilot.pause()
+    return notes, reloads
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "command", ["filter delta 1.2.3 0.5", "f delta . 1", "filter foo"]
+)
+async def test_bad_filter_warns_and_skips_refetch(fake_provider, monkeypatch, command):
+    """Malformed or unknown filters warn the user and don't refetch the chain."""
+    notes, reloads = await _submit_filter(fake_provider, monkeypatch, command)
+    assert reloads == []
+    assert len(notes) == 1
+    msg, severity = notes[0]
+    assert severity == "warning"
+    assert "Unknown filter" in msg
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("command", ["filter delta 0.3 0.7", "filter clear"])
+async def test_valid_filter_refetches_without_warning(
+    fake_provider, monkeypatch, command
+):
+    """Valid filters (and clear) refetch the chain and don't warn."""
+    notes, reloads = await _submit_filter(fake_provider, monkeypatch, command)
+    assert reloads == [("AAPL", "2026-12-18")]
+    assert notes == []
