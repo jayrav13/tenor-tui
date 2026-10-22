@@ -4,6 +4,10 @@ Watchlists group symbols you care about. They replaced the older "Recently
 Viewed" panel — you can have multiple named watchlists, each containing
 equity tickers and (optionally) specific options contracts.
 
+Watchlists change only when you ask them to. Searching for or selecting a
+ticker loads it without touching any list; press <kbd>w</kbd> to add the
+current symbol (or the highlighted contract) to a list.
+
 ![Watchlist picker](../assets/snapshots/watchlist-modal.svg){ loading=lazy }
 
 ## Keybindings

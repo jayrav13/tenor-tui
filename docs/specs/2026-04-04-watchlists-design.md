@@ -198,6 +198,10 @@ The existing auto-refresh system is extended: `_on_auto_refresh()` also refreshe
 
 The `add_to_history()` call in `_load_ticker()` is replaced with adding the ticker to the active watchlist via `add_item()`.
 
+> **Superseded (2026-10-21, #67):** this auto-add was removed. Browsing a
+> ticker no longer changes any watchlist; lists change only through the
+> explicit `w` action. `_load_ticker()` makes no history or watchlist call.
+
 ## Migration & Backwards Compatibility
 
 On app startup:
