@@ -11,7 +11,7 @@ that modal is open.
 | <kbd>Enter</kbd> | Submit (in search bar) |
 | <kbd>Esc</kbd> | Close modal / unfocus |
 | <kbd>q</kbd> | Quit |
-| <kbd>Ctrl+R</kbd> | Refresh current chain |
+| <kbd>r</kbd> or <kbd>Ctrl+R</kbd> | Refresh the quote and current chain (keeps the selected expiry) |
 | <kbd>Ctrl+P</kbd> | Pause / resume auto-refresh |
 | <kbd>?</kbd> | Open help overlay |
 | <kbd>:</kbd> | Open command palette |

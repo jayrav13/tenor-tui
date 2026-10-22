@@ -29,7 +29,9 @@ class ExpirySelector(Widget):
     def compose(self) -> ComposeResult:
         yield Static("Search for a ticker to view options", classes="no-data")
 
-    async def set_expirations(self, expirations: list[str]) -> None:
+    async def set_expirations(
+        self, expirations: list[str], active: str | None = None
+    ) -> None:
         await self.remove_children()
 
         if not expirations:
@@ -40,6 +42,9 @@ class ExpirySelector(Widget):
         await self.mount(tabbed)
         for exp in expirations:
             await tabbed.add_pane(TabPane(exp, Static("")))
+        if active in expirations:
+            panes = list(tabbed.query(TabPane))
+            tabbed.active = panes[expirations.index(active)].id
 
     def on_tabbed_content_tab_activated(
         self, event: TabbedContent.TabActivated

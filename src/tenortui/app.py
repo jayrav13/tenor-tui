@@ -149,7 +149,9 @@ class TenorTUI(App):
 
     def action_refresh(self) -> None:
         if self._current_symbol:
-            self._load_ticker(self._current_symbol)
+            self._load_ticker(
+                self._current_symbol, keep_expiration=self._current_expiration
+            )
 
     def action_help(self) -> None:
         self.push_screen(HelpOverlay())
@@ -523,7 +525,9 @@ class TenorTUI(App):
             pass
 
     @work(exclusive=True, group="ticker")
-    async def _load_ticker(self, symbol: str) -> None:
+    async def _load_ticker(
+        self, symbol: str, keep_expiration: str | None = None
+    ) -> None:
         ticker_bar = self.query_one(TickerBar)
         expiry_selector = self.query_one(ExpirySelector)
         chain_table = self.query_one(ChainTable)
@@ -560,12 +564,17 @@ class TenorTUI(App):
             expirations = await asyncio.to_thread(
                 self._provider.get_expirations, symbol
             )
-            await expiry_selector.set_expirations(expirations)
+            target = (
+                keep_expiration
+                if keep_expiration in expirations
+                else (expirations[0] if expirations else None)
+            )
+            await expiry_selector.set_expirations(expirations, active=target)
 
-            if expirations:
-                self._current_expiration = expirations[0]
+            if target:
+                self._current_expiration = target
                 chain = await asyncio.to_thread(
-                    self._provider.get_chain, symbol, expirations[0]
+                    self._provider.get_chain, symbol, target
                 )
                 if self._greeks_config.enabled and not any(
                     c.has_greeks for c in chain.calls + chain.puts
@@ -576,7 +585,7 @@ class TenorTUI(App):
                         calculate_chain_greeks,
                         chain=chain,
                         spot=self._current_price,
-                        expiration=expirations[0],
+                        expiration=target,
                         risk_free_rate=self._risk_free_rate,
                         dividend_yield=self._current_dividend_yield,
                     )
