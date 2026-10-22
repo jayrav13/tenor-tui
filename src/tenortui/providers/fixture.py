@@ -84,6 +84,9 @@ class FixtureProvider:
     """Deterministic provider for screenshots and demos."""
 
     name = "fixture"
+    # Offline demo mode: the app skips Yahoo calls and keeps watchlists in
+    # memory, so snapshots and tapes never touch the network or user files.
+    offline = True
 
     def get_quote(self, symbol: str) -> Quote:
         if symbol.upper() == "AAPL":

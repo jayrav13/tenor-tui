@@ -22,6 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `--provider fixture` (used by `make snapshots` and the VHS tapes) is now
+  truly offline and isolated: it no longer fetches Yahoo fundamentals or
+  watchlist prices, and it no longer reads or writes
+  `~/.config/tenor/watchlists.json`, so generating docs assets can't add AAPL
+  to your real watchlist or bake your private watchlists into committed SVGs
+  and GIFs (#62).
+
 - Pressing `d` in the watchlist panel could delete a different item from the
   highlighted one (and save that deletion) whenever the display order differed
   from insertion order, i.e. when items were grouped by symbol or re-sorted

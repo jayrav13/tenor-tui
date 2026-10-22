@@ -49,6 +49,11 @@ A deterministic provider used for screenshots and demos. Returns frozen data
 for AAPL and a placeholder for other symbols. Useful when you want a
 reproducible UI state without making network calls.
 
+Fixture mode is offline and ephemeral: it never calls Yahoo (fundamentals and
+watchlist prices come from the fixture data), and it neither reads nor writes
+`~/.config/tenor/watchlists.json`. It starts with an empty "Default"
+watchlist, and any watchlist edits last only for that session.
+
 ```bash
 tenortui --provider fixture
 ```

@@ -17,6 +17,8 @@ from tenortui.config import (
 )
 from tenortui.exceptions import ConfigError, ProviderError, SymbolNotFoundError
 from tenortui.watchlists import (
+    Watchlist,
+    WatchlistData,
     WatchlistItem,
     add_item,
     migrate_from_history,
@@ -71,7 +73,12 @@ class TenorTUI(App):
         self._current_price: float | None = None
         self._current_dividend_yield: float | None = None
         self._loading_ticker: bool = False
-        self._watchlist_data = migrate_from_history()
+        self._offline = getattr(provider, "offline", False)
+        self._watchlist_data = (
+            WatchlistData(watchlists=[Watchlist(name="Default")])
+            if self._offline
+            else migrate_from_history()
+        )
         self._current_earnings_date: str | None = None
         self._auto_refresh_enabled: bool = True
         self._auto_refresh_countdown: int = 0
@@ -90,6 +97,10 @@ class TenorTUI(App):
             fred_api_key=fred_api_key,
             refresh=self._refresh_config,
         )
+
+    def _save_watchlists(self) -> None:
+        if not self._offline:
+            save_watchlists(self._watchlist_data)
 
     def compose(self) -> ComposeResult:
         yield TickerBar()
@@ -141,7 +152,7 @@ class TenorTUI(App):
         self, event: WatchlistPanel.WatchlistChanged
     ) -> None:
         self._watchlist_data.active_index = event.index
-        save_watchlists(self._watchlist_data)
+        self._save_watchlists()
         self._fetch_watchlist_quotes()
 
     def action_focus_search(self) -> None:
@@ -399,7 +410,7 @@ class TenorTUI(App):
         item = self._pending_watchlist_item
         del self._pending_watchlist_item
         add_item(self._watchlist_data, result, item)
-        save_watchlists(self._watchlist_data)
+        self._save_watchlists()
         try:
             self.query_one(WatchlistPanel).set_watchlists(self._watchlist_data)
         except Exception:
@@ -414,7 +425,7 @@ class TenorTUI(App):
     def _on_watchlist_manager_closed(self, result) -> None:
         if result is not None:
             self._watchlist_data = result
-            save_watchlists(self._watchlist_data)
+            self._save_watchlists()
             try:
                 self.query_one(WatchlistPanel).set_watchlists(self._watchlist_data)
             except Exception:
@@ -441,7 +452,7 @@ class TenorTUI(App):
         if item_index is None:
             return
         remove_item(self._watchlist_data, wl_index, item_index)
-        save_watchlists(self._watchlist_data)
+        self._save_watchlists()
         try:
             panel.set_watchlists(self._watchlist_data)
         except Exception:
@@ -490,7 +501,13 @@ class TenorTUI(App):
             {item.symbol for item in wl.items if item.type == "equity"}
         )
         if equity_symbols:
-            quotes = await asyncio.to_thread(batch_quotes, equity_symbols)
+            if self._offline:
+                quotes = [
+                    await asyncio.to_thread(self._provider.get_quote, sym)
+                    for sym in equity_symbols
+                ]
+            else:
+                quotes = await asyncio.to_thread(batch_quotes, equity_symbols)
             panel.update_equity_quotes(quotes)
 
         # Fetch contract quotes grouped by (symbol, expiration)
@@ -541,7 +558,8 @@ class TenorTUI(App):
             ticker_bar.show_quote(quote)
             self._current_dividend_yield = quote.dividend_yield
             self._current_earnings_date = quote.earnings_date
-            quote = await asyncio.to_thread(fetch_fundamentals, quote)
+            if not self._offline:
+                quote = await asyncio.to_thread(fetch_fundamentals, quote)
             # Update earnings_date after fundamentals fetch (may populate it)
             self._current_earnings_date = quote.earnings_date
             self.query_one(FundamentalsBar).show_fundamentals(quote)

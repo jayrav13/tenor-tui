@@ -107,6 +107,9 @@ SNAPSHOTS: dict[str, SnapshotFn] = {
 
 
 async def _run_snapshot(name: str, fn: SnapshotFn) -> Path:
+    # FixtureProvider is offline: the app makes no Yahoo calls and never reads
+    # or writes ~/.config/tenor/watchlists.json, so snapshots stay reproducible
+    # and never leak the developer's own watchlists.
     app = TenorTUI(provider=FixtureProvider())
     async with app.run_test(size=(140, 40)) as pilot:
         svg = await fn(pilot)
