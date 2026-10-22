@@ -407,7 +407,7 @@ async def test_escape_in_command_mode_closes_command_bar_without_closing():
 
 @pytest.mark.asyncio
 async def test_action_cancel_or_close_in_modes_does_not_quit():
-    """Direct action calls in edit/command mode never dismiss the screen."""
+    """Direct action calls in command mode or with unsaved changes never dismiss."""
     app = SettingsApp()
     async with app.run_test() as pilot:
         await pilot.press("comma")
@@ -424,3 +424,30 @@ async def test_action_cancel_or_close_in_modes_does_not_quit():
         screen.action_cancel_or_close()  # Unsaved changes: warn, stay open
         await pilot.pause()
         assert app.screen is screen
+
+
+@pytest.mark.asyncio
+async def test_action_cancel_or_close_in_edit_mode_cancels_without_closing():
+    """Direct action call during an inline edit on a clean screen cancels the
+    edit and keeps the screen open (on_key normally intercepts Esc first)."""
+    app = SettingsApp()
+    async with app.run_test() as pilot:
+        await pilot.press("comma")
+        await pilot.pause()
+        screen = app.screen
+        target_row = None
+        for i, row in enumerate(screen._rows):
+            if row.key == "refresh.regular":
+                target_row = row
+                for _ in range(i):
+                    await pilot.press("j")
+                break
+        assert target_row is not None
+        await pilot.press("enter")  # Start editing
+        await pilot.pause()
+        assert target_row.is_editing
+        assert not screen._has_unsaved_changes
+        screen.action_cancel_or_close()
+        await pilot.pause()
+        assert not target_row.is_editing
+        assert app.screen is screen, "edit-mode cancel dismissed the screen"
